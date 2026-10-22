@@ -99,14 +99,14 @@ foreach ($root in $targetRoots) {
     }
 }
 
-# If manifest output requested, append to it
-if ($OutputManifest -and (Test-Path $OutputManifest)) {
+# If manifest output requested, insert into Tier 2 placeholder or append
+if ($OutputManifest -and (Test-Path -LiteralPath $OutputManifest)) {
     $sb = [System.Text.StringBuilder]::new()
-    [void]$sb.AppendLine("")
-    [void]$sb.AppendLine("## 🟡 沉睡工程构建产物 (Tier 2: 长期未修改工程)")
+    [void]$sb.AppendLine("### 沉睡工程构建产物 (超过 $DaysInactive 天未修改)")
     [void]$sb.AppendLine("")
     if ($artifactsFound.Count -eq 0) {
-        [void]$sb.AppendLine("*未发现超过 $DaysInactive 天未修改的沉睡构建产物。*")
+        [void]$sb.AppendLine("*（经扫描，未发现超过 $DaysInactive 天未修改的沉睡工程构建产物，所有本地工程近期均活跃）*")
+        [void]$sb.AppendLine("")
     } else {
         foreach ($art in $artifactsFound) {
             [void]$sb.AppendLine("- [ ] **[" + $art.ID + "] " + $art.Project + " -> " + $art.ArtifactType + "** 🟡 【沉睡 " + $art.DaysInactive + " 天】")
@@ -116,7 +116,14 @@ if ($OutputManifest -and (Test-Path $OutputManifest)) {
             [void]$sb.AppendLine("")
         }
     }
-    [System.IO.File]::AppendAllText($OutputManifest, $sb.ToString(), [System.Text.Encoding]::UTF8)
+    
+    $manifestContent = Get-Content -LiteralPath $OutputManifest -Raw -Encoding UTF8
+    if ($manifestContent -match '<!-- DEV_ARTIFACTS_PLACEHOLDER -->') {
+        $newContent = $manifestContent -replace '<!-- DEV_ARTIFACTS_PLACEHOLDER -->', $sb.ToString().TrimEnd()
+        [System.IO.File]::WriteAllText($OutputManifest, $newContent, (New-Object System.Text.UTF8Encoding($true)))
+    } else {
+        [System.IO.File]::AppendAllText($OutputManifest, "`n" + $sb.ToString(), (New-Object System.Text.UTF8Encoding($true)))
+    }
 }
 
 if ($Json) {

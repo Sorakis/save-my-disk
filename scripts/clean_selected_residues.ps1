@@ -45,7 +45,7 @@ $targetsToDelete = @()
 # 1. Resolve selected items from manifest if -FromManifest is specified
 if ($FromManifest -and (Test-Path $ManifestPath)) {
     $manifestContent = Get-Content -LiteralPath $ManifestPath -Raw -Encoding UTF8
-    $pattern = '-\s*\[[xX]\]\s*\*\*\[((?:RES|DEV)-\d+)\]\s*(.+?)\*\*.*?\r?\n\s*\*\s*路径[：:]\s*`([^`]+)`'
+    $pattern = '-\s*\[[xX]\]\s*\*\*\[((?:SYS|RES|DEV)-\d+)\]\s*(.+?)\*\*.*?\r?\n\s*\*\s*路径[：:]\s*`([^`]+)`'
     $itemMatches = [regex]::Matches($manifestContent, $pattern, [System.Text.RegularExpressions.RegexOptions]::Singleline)
 
     foreach ($m in $itemMatches) {
@@ -60,7 +60,7 @@ if ($FromManifest -and (Test-Path $ManifestPath)) {
     if ($targetsToDelete.Count -gt 0) {
         Write-Host "Detected $($targetsToDelete.Count) checked item(s) from manifest: $(($targetsToDelete | ForEach-Object { $_.ID }) -join ', ')" -ForegroundColor Cyan
     } else {
-        Write-Warning "No checked items (- [x] **[RES-xxx] or [DEV-xxx]) found in manifest file: $ManifestPath"
+        Write-Warning "No checked items (- [x] **[SYS/RES/DEV-xxx]) found in manifest file: $ManifestPath"
     }
 }
 
@@ -147,11 +147,22 @@ foreach ($t in $targetsToDelete) {
 
     Write-Host "Purging target: $p ..." -ForegroundColor Cyan
     try {
-        $items = Get-ChildItem -LiteralPath $p -Recurse -File -Force -ErrorAction SilentlyContinue
-        $sz = ($items | Measure-Object -Property Length -Sum).Sum
-        Remove-Item -LiteralPath $p -Recurse -Force -ErrorAction Stop
-        $freedBytes += $sz
-        $deletedCount += $items.Count
+        if ($p.TrimEnd('\') -like "*AppData\Local\Temp" -or $p.TrimEnd('\') -like "*\Temp") {
+            # Temp directory: purge contents inside Temp without destroying Temp root
+            $items = Get-ChildItem -LiteralPath $p -Recurse -File -Force -ErrorAction SilentlyContinue
+            $sz = ($items | Measure-Object -Property Length -Sum).Sum
+            Get-ChildItem -LiteralPath $p -Force -ErrorAction SilentlyContinue | ForEach-Object {
+                Remove-Item -LiteralPath $_.FullName -Recurse -Force -ErrorAction SilentlyContinue
+            }
+            $freedBytes += $sz
+            $deletedCount += $items.Count
+        } else {
+            $items = Get-ChildItem -LiteralPath $p -Recurse -File -Force -ErrorAction SilentlyContinue
+            $sz = ($items | Measure-Object -Property Length -Sum).Sum
+            Remove-Item -LiteralPath $p -Recurse -Force -ErrorAction Stop
+            $freedBytes += $sz
+            $deletedCount += $items.Count
+        }
         if ($t.ID -and $t.ID -ne "MANUAL") {
             $successfullyCleanedIds += $t.ID
         }
@@ -162,12 +173,12 @@ foreach ($t in $targetsToDelete) {
 }
 
 # Update manifest on disk if available
-if ((Test-Path $ManifestPath) -and $successfullyCleanedIds.Count -gt 0) {
+if ((Test-Path -LiteralPath $ManifestPath) -and $successfullyCleanedIds.Count -gt 0) {
     $content = Get-Content -LiteralPath $ManifestPath -Raw -Encoding UTF8
     foreach ($cid in $successfullyCleanedIds) {
         $content = [regex]::Replace($content, "-\s*\[[ xX]\]\s*\*\*\[$cid\]", "- [x] ~~**[$cid]**~~ *(已成功清理)*")
     }
-    [System.IO.File]::WriteAllText($ManifestPath, $content, [System.Text.Encoding]::UTF8)
+    [System.IO.File]::WriteAllText($ManifestPath, $content, (New-Object System.Text.UTF8Encoding($true)))
     Write-Host "Manifest file updated at $ManifestPath" -ForegroundColor Cyan
 }
 

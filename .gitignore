@@ -1,0 +1,4 @@
+# Save-My-Disk local cache and audit manifests
+.save-my-disk/
+*.tmp
+*.log

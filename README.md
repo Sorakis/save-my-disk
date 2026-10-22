@@ -105,20 +105,35 @@ git clone https://github.com/Sorakis/save-my-disk.git "$HOME\.gemini\config\skil
 在对话框中直接输入显式调用口令：
 > **用户**：“使用 `save-my-disk` 技能，帮我只读扫描一下当前电脑的磁盘空间，看看有哪些大文件或安全残留”
 
-AI 会自动执行只读体检脚本，输出各驱动器容量分布，以及一份**带独立编号的候选审核清单**：
+AI 会自动执行只读体检脚本，严格遵循**双轨直呈规范**：
+1. **通道一（对话框直接呈现 4-Tier 完整报表）**：
 ```markdown
-| 编号 | 类别 | 名称 | 占用大小 | 路径 | 建议 |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **RES-001** | Steam 残留 | GhostGameResidual | 120 MB | `D:\STEAM\steamapps\common\GhostGame` | 游戏已卸载，仅存留崩溃日志，建议清理 |
-| **RES-002** | 软件空目录 | 鑻遍泟鑱旂洘 | 0 MB | `D:\WeGameApps\鑻遍泟鑱旂洘` | 乱码空目录，建议清理 |
-| **RES-003** | WPS 缓存 | WPS 自动备份暂存 | 450 MB | `%APPDATA%\Kingsoft\backup` | 历史临时快照，建议清理 |
+### 🟢 Tier 1: 零风险系统与更新项 (Zero-Risk System & Update)
+* 🟢 **[SYS-000] Windows 大版本升级备份 ($WINDOWS.~BT / Windows.old)**：0 MB (状态：健康 / 已由系统在升级 10 天后自动清理，无需操作)
+* 待清理 **[SYS-001] Windows Update 补丁下载缓存**：568 MB (`C:\Windows\SoftwareDistribution\Download`)
+* 待清理 **[SYS-002] 用户临时运行缓存 (Temp)**：1,003 MB (`%LOCALAPPDATA%\Temp`)
+
+### 🟡 Tier 2: 开发者与环境大缓存 (需权衡决策)
+* 决策项 **[RES-001] NVIDIA App 驱动离线安装源**：3,767 MB (删后不影响运行中显卡性能，仅重新安装驱动时需重下)
+* 决策项 **[DEV-001] DeadFrontend -> node_modules**：650 MB (工程已沉睡 90 天未修改，源码 100% 受保护)
+
+### 🟠 Tier 3: 常用软件残留与日志 (推荐清理)
+* 建议清理 **[RES-002] Steam 卸载残余: Aim Lab**：1.8 MB (已卸载空目录与日志)
+* 建议清理 **[RES-003] WPS 临时自动备份快照**：450 MB (用户原始文档安全保存在工作区)
+
+### 🔴 Tier 4: 严禁触碰的保护红线
+* 系统核心 (System32/WinSxS) 与工程源码库受最高级别安全免疫保护。
 ```
 
-#### 2. 靶向授权与定向清理
-**AI 绝不会自动删除全部项目**。您只需根据清单，回复您想清理的编号：
-> **用户**：“确认清理 RES-001 和 RES-002，其余保留”
+2. **通道二（提供本地可点击 Manifest 清单）**：
+> “详细清理清单已同步写入本地 SSOT 文件：`[.save-my-disk/cleanup_manifest.md](file:///.../.save-my-disk/cleanup_manifest.md)`”
 
-AI 收到您的明确指令后，才会调用底层精准清理脚本清除指定项，并汇报最终释放的容量与服务健康状态。
+#### 2. 靶向授权与定向清理 (支持双重确认方式)
+**AI 绝不会自动删除全部项目**。您有两种便捷确认方式：
+* **方式 A (对话框直接回复)**：“确认清理 SYS-001, SYS-002 和 DEV-001，其余保留”
+* **方式 B (清单文件勾选确认)**：在本地 `cleanup_manifest.md` 文件中将目标项改为 `- [x]` 保存后回复：“已勾选，按清单清理”
+
+AI 收到您的明确授权后，才会执行底层精准清理脚本清除指定项，并汇报最终释放的容量与服务健康状态。
 
 ---
 
