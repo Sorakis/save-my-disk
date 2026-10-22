@@ -60,7 +60,46 @@ flowchart TD
 > **🚨 显式调用原则 (Explicit Invocation First)**：  
 > 磁盘运维属于系统高危敏感操作。为了确保您的开发环境与核心文件 100% 绝对安全，**本项目严禁 AI 在普通编程时隐式静默自发运行**。您必须显式唤起本技能，Agent 会严格遵守 **“只读体检 -> 呈批候选清单 -> 靶向确认 -> 执行自愈”** 闭环。
 
-### 方式一：在 AI 编程助手（Antigravity / WorkBuddy / Claude / Cursor 等）中使用
+---
+
+### ⚡ 一键给 Agent 的安装与运行指令 (推荐 ⭐⭐⭐⭐⭐)
+
+你**无需手动下载配置**！直接将下面这段指令完整复制，粘贴发送给你的任意 AI 编程助手（**Antigravity、WorkBuddy、Cursor、Claude Code、OpenCode、Codex 等**）：
+
+```text
+请帮我把 https://github.com/Sorakis/save-my-disk.git 克隆到当前工作区的 .tools/save-my-disk 目录中，读取其中的 SKILL.md 与 AGENTS.md 规范；然后作为 save-my-disk 助手，对当前电脑执行一次只读磁盘体检，向我汇报各盘空间占用分布与安全清理候选清单，并提示我下一步如何选择性清理。
+```
+
+> **Agent 收到这句口令后会自动**：
+> 1. 执行 Git 克隆将仓库拉取到工作区；
+> 2. 识别并装载其中的全套多 Agent 协议与工具；
+> 3. 自动执行只读体检并列出带编号的候选清理清单；
+> 4. 给出清晰指引，等待你挑选确认后再动手！
+
+---
+
+### 📦 手动安装方式 (Manual Installation)
+
+如果你更习惯手动下载或希望在本机全局部署：
+
+#### 选项 A：克隆到当前开发项目（推荐配合项目使用）
+在你的项目根目录下打开终端，执行：
+```bash
+# 推荐克隆到工作区的工具目录
+git clone https://github.com/Sorakis/save-my-disk.git .tools/save-my-disk
+```
+
+#### 选项 B：一键全局安装（让本机所有 Agent / 终端随时随地可用）
+在 PowerShell 中运行以下一行命令，将工具包克隆到用户全局技能库：
+```powershell
+# 克隆到全局技能配置目录（以 Antigravity / 全局 Agent 规范为例）
+git clone https://github.com/Sorakis/save-my-disk.git "$HOME\.gemini\config\skills\save-my-disk"
+```
+*安装完成后，无论你在电脑的哪个文件夹打开 AI，直接对它说：“使用 save-my-disk 技能扫描磁盘” 即可！*
+
+---
+
+### 💬 交互式会话流程演示 (Interactive Workflow)
 
 #### 1. 显式唤醒与只读体检
 在对话框中直接输入显式调用口令：
