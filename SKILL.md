@@ -8,7 +8,7 @@ description: >-
   NEVER trigger implicitly during unrelated coding or conversation turns.
 ---
 
-# Save My Disk (save-my-disk) Skill 🚀 (v0.4.0)
+# Save My Disk (save-my-disk) Skill 🚀 (v0.5.1)
 
 > **安全准则**：本技能属于系统级敏感运维操作。**必须在用户显式呼叫时才启动**。任何阶段严禁暗中执行删除动作，所有清理步骤均须呈批候选清单并获得用户靶向授权。
 
@@ -16,13 +16,13 @@ description: >-
 
 1. **Explicit Call Only (显式触发)**: Do not trigger or suggest disk cleanup unless the user explicitly mentions `save-my-disk` or specifically requests a storage audit.
 2. **Read-Only First (只读体检)**: Never delete, move, or modify any file during the initial audit phase.
-3. **Itemize Before Clean (清单呈批)**: Present an itemized list with unique IDs (`SYS-xxx`, `RES-xxx`, `DEV-xxx`, `PKG-xxx`, `AI-xxx`) in `.save-my-disk/cleanup_manifest.md`.
-4. **Preserve Source Code & AI Repos (绝不误伤源码与共享模型)**: When cleaning inactive dev artifacts (e.g. `node_modules`, `target`), NEVER delete project root or source files. For AI models and Conda/pip caches, handle symlinks/blobs and package caches according to risk tiers.
+3. **Itemize Before Clean (清单呈批)**: Present an itemized list with unique IDs (`SYS-xxx`, `RES-xxx`, `DEV-xxx`, `PKG-xxx`, `AI-xxx`, `IM-xxx`) in `.save-my-disk/cleanup_manifest.md`.
+4. **Preserve Source Code & Chat Databases (绝不误伤源码与聊天数据库)**: When cleaning inactive dev artifacts or IM caches, NEVER delete project root, source files, or any chat history databases (`*.db`, `*.kvdb`, `Msg`, `db_storage`).
 5. **Dual-Channel Reporting (双轨直呈与透明建档 - 必须严格执行)**:
    * **通道一 (对话框直报)**：体检完成后，Agent **必须**在对话框气泡中直接打印完整的 **4 级风险梯度 (4-Tier) Markdown 表格**，包括已清理项的状态（如 `$WINDOWS.~BT` 汇报 0 MB 健康状态，解答用户关于 cleanmgr 的疑问），让用户无需打开文件即可一览无余。
    * **通道二 (可点击清单)**：Agent **必须**在回复中提供本地清单文件的绝对路径可点击链接（`[.save-my-disk/cleanup_manifest.md](file:///绝对路径/.save-my-disk/cleanup_manifest.md)`），明确告知用户该文件是人机同步的单一真实事实来源（SSOT）。
    * **双轨决策确认指引**：明确向用户说明两种确认方式：
-     * **方式 A (对话框直接回复)**：在聊天框回复编号（如“清理 SYS-001 和 PKG-001”）；
+     * **方式 A (对话框直接回复)**：在聊天框回复编号（如“清理 SYS-001 和 IM-001”）；
      * **方式 B (清单文件打勾确认)**：直接打开 `cleanup_manifest.md` 将目标项改为 `[x]` 保存后回复“已勾选，按清单清理”。
 6. **Explicit Confirmation (靶向授权)**: Only execute deletion for targets explicitly confirmed by the user.
 7. **Post-Cleanup Verification (战果自愈)**: Always verify volume capacity and critical service health after any deletion using [scripts/verify_health.ps1](./scripts/verify_health.ps1).
@@ -48,11 +48,15 @@ description: >-
    ```powershell
    powershell -ExecutionPolicy Bypass -File ./scripts/scan_ai_models.ps1 -OutputManifest ./.save-my-disk/cleanup_manifest.md -Json
    ```
-5. Inactive Developer Build Artifacts Scan (> 60 days inactive, auto-inserts into Tier 2):
+5. Domestic IM & Office Caches Scan (WeChat 3.x/4.0, WXWork, QQ, Feishu, DingTalk):
+   ```powershell
+   powershell -ExecutionPolicy Bypass -File ./scripts/scan_im_office_residues.ps1 -OutputManifest ./.save-my-disk/cleanup_manifest.md -Json
+   ```
+6. Inactive Developer Build Artifacts Scan (> 60 days inactive, auto-inserts into Tier 2):
    ```powershell
    powershell -ExecutionPolicy Bypass -File ./scripts/scan_dev_artifacts.ps1 -DaysInactive 60 -OutputManifest ./.save-my-disk/cleanup_manifest.md -Json
    ```
-6. WSL2 & Docker VHDX Analysis:
+7. WSL2 & Docker VHDX Analysis:
    ```powershell
    powershell -ExecutionPolicy Bypass -File ./scripts/manage_wsl_disk.ps1 -Json
    ```

@@ -47,7 +47,7 @@ $targetsToDelete = @()
 # 1. Resolve selected items from manifest if -FromManifest is specified
 if ($FromManifest -and (Test-Path -LiteralPath $ManifestPath)) {
     $manifestContent = Get-Content -LiteralPath $ManifestPath -Raw -Encoding UTF8
-    $pattern = '-\s*\[[xX]\]\s*\*\*\[((?:SYS|RES|DEV|AI|PKG)-\d+)\]\s*(.+?)\*\*.*?\r?\n\s*\*\s*路径[：:]\s*`([^`]+)`'
+    $pattern = '-\s*\[[xX]\]\s*\*\*\[((?:SYS|RES|DEV|AI|PKG|IM)-\d+)\]\s*(.+?)\*\*.*?\r?\n\s*\*\s*路径[：:]\s*`([^`]+)`'
     $itemMatches = [regex]::Matches($manifestContent, $pattern, [System.Text.RegularExpressions.RegexOptions]::Singleline)
 
     foreach ($m in $itemMatches) {
@@ -120,6 +120,20 @@ if ($TargetIds -and $targetsToDelete.Count -eq 0) {
             }
         }
     }
+
+    # 2.5 Check scan_im_office_residues
+    if (Test-Path -LiteralPath "$PSScriptRoot\scan_im_office_residues.ps1") {
+        $scanIm = if ($MockRoot) {
+            & "$PSScriptRoot\scan_im_office_residues.ps1" -MockRoot $MockRoot -Json | ConvertFrom-Json | ForEach-Object { $_ }
+        } else {
+            & "$PSScriptRoot\scan_im_office_residues.ps1" -Json | ConvertFrom-Json | ForEach-Object { $_ }
+        }
+        foreach ($item in $scanIm) {
+            if ($TargetIds -contains $item.ID -and $item.SizeMB -gt 0) {
+                $targetsToDelete += $item
+            }
+        }
+    }
 }
 
 # 3. Handle manual direct paths
@@ -152,9 +166,14 @@ if (-not $Force) {
 $forbiddenPatterns = @(
     "System32", "WinSxS", "Windows\\System",
     "^([a-zA-Z]:\\)?Program Files( \(x86\))?\\?$",
-    "\\Desktop$", "\\Desktop\\", "\\Documents$", "\\Documents\\",
+    "\\Desktop\\?$", "\\Documents\\?$",
     "\\miniconda3\\envs", "\\anaconda3\\envs", "\\\.conda\\envs",
-    "\\(mini|ana)?conda\d?\\pkgs$"
+    "\\(mini|ana)?conda\d?\\pkgs$",
+    "\\(db_storage|nt_db|contact|session)($|\\)",
+    "\\(All Users|all_users)($|\\)",
+    "\\Backup($|\\)",
+    "\\Msg($|\\)",
+    "\\Msg3?\.0?\.db"
 )
 
 $deletedCount = 0
@@ -199,6 +218,18 @@ foreach ($t in $targetsToDelete) {
         (Test-Path -LiteralPath (Join-Path $p "pyproject.toml")) -or
         (Test-Path -LiteralPath (Join-Path $p "go.mod"))) {
         Write-Error "SECURITY BLOCKED: Target contains active project root marker: $p"
+        continue
+    }
+
+    # Check 4.3: Rigid Chat Database Sentinel (熔断哨兵) - Never delete any directory containing chat database files!
+    $hasDbFile = Get-ChildItem -LiteralPath $p -Recurse -File -Force -ErrorAction SilentlyContinue |
+        Where-Object {
+            $_.Extension -match '^\.(db|sqlite|sqlite3|kvdb|mmkv)$' -or
+            $_.Name -match '\.(db|sqlite|sqlite3|kvdb|mmkv)-(wal|shm|journal)$' -or
+            $_.Name -like '*.material'
+        }
+    if ($hasDbFile) {
+        Write-Error "SECURITY BLOCKED: Target directory contains chat history database or journal files! Aborting deletion: $p"
         continue
     }
 
@@ -257,6 +288,20 @@ foreach ($t in $targetsToDelete) {
             }
             $freedBytes += $sz
             $deletedCount += $items.Count
+        } elseif ($t.Category -like "*Inactive Files*" -or $t.Name -like "*沉睡历史*") {
+            # Inactive received documents (> 90 days): selectively purge old files without destroying recent files or folder structure
+            Write-Host "Selectively purging inactive files (> 90 days) in $p..." -ForegroundColor Cyan
+            $cutoff = (Get-Date).AddDays(-90)
+            $oldFiles = Get-ChildItem -LiteralPath $p -Recurse -File -Force -ErrorAction SilentlyContinue | Where-Object {
+                $_.LastWriteTime -lt $cutoff
+            }
+            $sz = ($oldFiles | Measure-Object -Property Length -Sum).Sum
+            if ($null -eq $sz) { $sz = 0 }
+            $oldFiles | ForEach-Object {
+                Remove-Item -LiteralPath $_.FullName -Force -ErrorAction SilentlyContinue
+            }
+            $freedBytes += $sz
+            $deletedCount += $oldFiles.Count
         } else {
             # Standard directory or file target
             $items = Get-ChildItem -LiteralPath $p -Recurse -File -Force -ErrorAction SilentlyContinue

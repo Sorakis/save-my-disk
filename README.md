@@ -5,8 +5,8 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![CI Sandbox](https://github.com/Sorakis/save-my-disk/actions/workflows/test.yml/badge.svg)](https://github.com/Sorakis/save-my-disk/actions)
-[![Release](https://img.shields.io/badge/Release-v0.4.0-orange.svg)](https://github.com/Sorakis/save-my-disk/releases)
-[![Platform](https://img.shields.io/badge/Platform-Windows%20(v0.4.0)%20%7C%20Linux%20%26%20macOS%20(Planned)-0078D6.svg)]()
+[![Release](https://img.shields.io/badge/Release-v0.5.1-orange.svg)](https://github.com/Sorakis/save-my-disk/releases)
+[![Platform](https://img.shields.io/badge/Platform-Windows%20(v0.5.1)%20%7C%20Linux%20%26%20macOS%20(Planned)-0078D6.svg)]()
 [![Compatibility](https://img.shields.io/badge/Agents-Antigravity%20%7C%20Codex%20%7C%20ClaudeCode%20%7C%20Cursor%20%7C%20WorkBuddy-brightgreen.svg)]()
 
 ---
@@ -182,6 +182,7 @@ save-my-disk/
 │   ├── scan_app_residues.ps1 # 软件残留与安全缓存扫描器
 │   ├── scan_package_caches.ps1 # 全局包管理器缓存治理 (pip, npm, Conda, Gradle)
 │   ├── scan_ai_models.ps1    # AI/ML 大模型权重与缓存透视 (Hugging Face, Ollama, PyTorch)
+│   ├── scan_im_office_residues.ps1 # 国内主流通讯与办公应用深度治理 (微信 3.x/4.0, 企微, QQ, 飞书, 钉钉)
 │   ├── scan_dev_artifacts.ps1 # 沉睡工程僵尸构建产物探测器 (node_modules/target/.vs)
 │   ├── manage_wsl_disk.ps1   # WSL2 & Docker 虚拟硬盘(.vhdx)分析与无损压缩
 │   ├── clean_selected_residues.ps1 # 基于 ID/Manifest 勾选项的精准清理器
@@ -219,8 +220,13 @@ save-my-disk/
   * **AI/ML 存储透视 (`scan_ai_models.ps1`)**：Hugging Face 符号链接防重计引擎、Ollama 全局 Blobs 共享库检测与靶向 `ollama rm` 引导、PyTorch Checkpoints 智能归类。
   * **全局包管理缓存治理 (`scan_package_caches.ps1`)**：pip (`LOCALAPPDATA` / `PIP_CACHE_DIR`)、npm 全局下载缓存、Conda 双轨分类（Tier 1 `.tar.bz2/.conda` 压缩包 vs Tier 2 已解压 packages）、Gradle `caches/modules-2`。
   * **安全屏障与沙箱隔离**：严禁误伤 Conda 活跃环境 (`envs/`) 与工程根目录，沙箱测试全隔离拦截防本机缓存穿透。
-- [ ] **v0.5**: macOS 平台支持 (`~/Library/Caches`, Xcode DerivedData, Homebrew cache)。
-- [ ] **v0.6**: Linux 平台支持 (`/var/cache/apt`, journalctl 日志修剪, Docker system prune)。
+- [x] **v0.5.1 (国内主流通讯与重度办公应用深度治理)**:
+  * **微信双架构联合嗅探 (`scan_im_office_residues.ps1`)**：同时支持经典版微信 3.x (`WeChat Files`) 与全新 Qt 重构版微信 4.0 (`xwechat_files`)，反向黑名单智能枚举自定义微信号。
+  * **聊天数据库双层刚性熔断机制**：`*.db`、`*.kvdb`、`db_storage`、`Msg`、`-wal`、`-shm`、`*.material` 绝对免疫；清理执行前内置递归数据库哨兵熔断检查，杜绝任何聊天记录误伤。
+  * **多媒体与沉睡文档精细分级**：流媒体播放缓存与缩略图 (Tier 3) vs 超过 90 天沉睡历史文档与原图 (Tier 2 权衡项)。
+- [ ] **v0.5.2**: Windows 浏览器与系统深层小文件死缓存治理 (Chrome/Edge Code Cache、DirectX ShaderCache 与全盘空目录死链修剪)。
+- [ ] **v0.5.3**: 可视化战报与终端交互升级 (终端键盘交互式选单 + 清理前后 HTML 动态图表可视化报表)。
+- [ ] **v0.6.0**: macOS 原生跨平台拓展 (`~/Library/Caches`, Xcode DerivedData, Homebrew cache)。
 
 ---
 

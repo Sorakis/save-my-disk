@@ -320,6 +320,8 @@ foreach ($item in $tier1Items) {
 
 [void]$sb.AppendLine('<!-- TIER1_PKG_CACHES_PLACEHOLDER -->')
 [void]$sb.AppendLine('')
+[void]$sb.AppendLine('<!-- TIER1_IM_OFFICE_PLACEHOLDER -->')
+[void]$sb.AppendLine('')
 
 # Section 2: Tier 2
 [void]$sb.AppendLine('## 🟡 Tier 2: 开发者与环境大缓存 (需权衡决策)')
@@ -343,6 +345,8 @@ if ($tier2Items.Count -eq 0) {
 [void]$sb.AppendLine('')
 [void]$sb.AppendLine('<!-- DEV_ARTIFACTS_PLACEHOLDER -->')
 [void]$sb.AppendLine('')
+[void]$sb.AppendLine('<!-- TIER2_IM_OFFICE_PLACEHOLDER -->')
+[void]$sb.AppendLine('')
 
 # Section 3: Tier 3
 [void]$sb.AppendLine('## 🟠 Tier 3: 常用软件残留与日志 (推荐清理)')
@@ -365,6 +369,9 @@ if ($tier3Items.Count -eq 0) {
         [void]$sb.AppendLine('')
     }
 }
+
+[void]$sb.AppendLine('<!-- TIER3_IM_OFFICE_PLACEHOLDER -->')
+[void]$sb.AppendLine('')
 
 # Section 4: Tier 4
 [void]$sb.AppendLine('---')

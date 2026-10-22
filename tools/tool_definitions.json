@@ -171,6 +171,33 @@
     {
       "type": "function",
       "function": {
+        "name": "scan_im_office_residues",
+        "description": "Scans for domestic IM & office application caches (WeChat 3.x/4.0, WXWork, QQ, Feishu, DingTalk). Distinguishes media playback caches (Tier 3) from historic received files (Tier 2) and strictly shields all chat history databases (*.db).",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "days_inactive": {
+              "type": "integer",
+              "description": "Threshold in days for identifying inactive historic received documents. Defaults to 90.",
+              "default": 90
+            },
+            "output_manifest": {
+              "type": "string",
+              "description": "Path to update cleanup_manifest.md directly.",
+              "default": ".save-my-disk/cleanup_manifest.md"
+            },
+            "json": {
+              "type": "boolean",
+              "description": "Return structured JSON list.",
+              "default": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
         "name": "verify_health",
         "description": "Verifies post-cleanup volume free space and Windows Update service operational health.",
         "parameters": {

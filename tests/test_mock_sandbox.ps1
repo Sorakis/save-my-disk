@@ -20,7 +20,7 @@ $testRunId = [guid]::NewGuid().ToString().Substring(0, 8)
 $sandbox = Join-Path $env:TEMP "disk_cleaner_test_$testRunId"
 
 Write-Host "======================================================" -ForegroundColor Cyan
-Write-Host " STARTING ISOLATED MOCK SANDBOX TEST SUITE (v0.4.0)" -ForegroundColor Cyan
+Write-Host " STARTING ISOLATED MOCK SANDBOX TEST SUITE (v0.5.1)" -ForegroundColor Cyan
 Write-Host " Sandbox Location: $sandbox" -ForegroundColor Gray
 Write-Host "======================================================" -ForegroundColor Cyan
 
@@ -114,7 +114,45 @@ try {
     Set-Content -Path "$activeProj\src\main.rs" -Value "fn main() {}"
     Set-Content -Path "$activeProj\target\debug\app.exe" -Value ("A" * 6 * 1024 * 1024)
 
-    Write-Host "[SETUP] All mock sandbox fixtures (4-Tier v0.4.0 fixtures) created." -ForegroundColor Green
+    # 1.10 Mock Domestic IM & Heavyweight Office (v0.5.1 fixtures)
+    # WeChat 3.x
+    $mockWx3 = "$sandbox\Documents\WeChat Files\wxid_alice123"
+    New-Item -ItemType Directory -Path "$mockWx3\FileStorage\Video" -Force | Out-Null
+    Set-Content -Path "$mockWx3\FileStorage\Video\mock_video.mp4" -Value ("V" * 5 * 1024 * 1024)
+    New-Item -ItemType Directory -Path "$mockWx3\FileStorage\Cache" -Force | Out-Null
+    Set-Content -Path "$mockWx3\FileStorage\Cache\mock_thumb.dat" -Value ("C" * 3 * 1024 * 1024)
+    New-Item -ItemType Directory -Path "$mockWx3\FileStorage\File\2024-01" -Force | Out-Null
+    Set-Content -Path "$mockWx3\FileStorage\File\2024-01\ancient_report.pdf" -Value ("F" * 5 * 1024 * 1024)
+    (Get-Item "$mockWx3\FileStorage\File\2024-01\ancient_report.pdf").LastWriteTime = (Get-Date).AddDays(-100)
+    # WeChat 3.x CRITICAL CHAT DATABASE (Must be 100% immune!)
+    New-Item -ItemType Directory -Path "$mockWx3\Msg\Multi" -Force | Out-Null
+    Set-Content -Path "$mockWx3\Msg\Multi\MSG0.db" -Value ("D" * 10 * 1024 * 1024)
+
+    # WeChat 4.0
+    $mockWx4 = "$sandbox\Documents\xwechat_files\bob_alias_4a1b"
+    New-Item -ItemType Directory -Path "$mockWx4\cache\2024-05\Emoticon" -Force | Out-Null
+    Set-Content -Path "$mockWx4\cache\2024-05\Emoticon\sticker.bin" -Value ("E" * 3 * 1024 * 1024)
+    New-Item -ItemType Directory -Path "$mockWx4\msg\video" -Force | Out-Null
+    Set-Content -Path "$mockWx4\msg\video\stream.mp4" -Value ("S" * 4 * 1024 * 1024)
+    # WeChat 4.0 CRITICAL DATABASE
+    New-Item -ItemType Directory -Path "$mockWx4\db_storage\message" -Force | Out-Null
+    Set-Content -Path "$mockWx4\db_storage\message\message_0.db" -Value ("M" * 8 * 1024 * 1024)
+    Set-Content -Path "$mockWx4\db_storage\message\message_0.db-wal" -Value ("W" * 2 * 1024 * 1024)
+
+    # WXWork
+    $mockWxw = "$sandbox\Documents\WXWork\corp_enterprise_99"
+    New-Item -ItemType Directory -Path "$mockWxw\Storage\Video" -Force | Out-Null
+    Set-Content -Path "$mockWxw\Storage\Video\work_meeting.mp4" -Value ("K" * 4 * 1024 * 1024)
+    New-Item -ItemType Directory -Path "$mockWxw\Data" -Force | Out-Null
+    Set-Content -Path "$mockWxw\Data\chat.db" -Value ("Z" * 5 * 1024 * 1024)
+
+    # Feishu & DingTalk
+    New-Item -ItemType Directory -Path "$sandbox\AppData\Local\Feishu\app_data\logs" -Force | Out-Null
+    Set-Content -Path "$sandbox\AppData\Local\Feishu\app_data\logs\feishu_crash.log" -Value ("L" * 2 * 1024 * 1024)
+    New-Item -ItemType Directory -Path "$sandbox\AppData\Roaming\DingTalk\logs" -Force | Out-Null
+    Set-Content -Path "$sandbox\AppData\Roaming\DingTalk\logs\ding_error.log" -Value ("G" * 2 * 1024 * 1024)
+
+    Write-Host "[SETUP] All mock sandbox fixtures (4-Tier v0.5.1 fixtures) created." -ForegroundColor Green
 
     # ----------------------------------------------------
     # 2. Test Execution
@@ -125,6 +163,7 @@ try {
     $scanPackageScript = Join-Path $scriptsDir "scan_package_caches.ps1"
     $scanAiScript = Join-Path $scriptsDir "scan_ai_models.ps1"
     $scanDevScript = Join-Path $scriptsDir "scan_dev_artifacts.ps1"
+    $scanImScript = Join-Path $scriptsDir "scan_im_office_residues.ps1"
     $manageWslScript = Join-Path $scriptsDir "manage_wsl_disk.ps1"
     $cleanScript = Join-Path $scriptsDir "clean_selected_residues.ps1"
     $verifyScript = Join-Path $scriptsDir "verify_health.ps1"
@@ -183,6 +222,22 @@ try {
         throw "FAIL: Dev artifact detection failed (Count: $($devJson.Count))."
     }
 
+    # TEST 5.5: Domestic IM & Heavyweight Office Caches Scan (v0.5.1)
+    Write-Host "`n[TEST 5.5] Running scan_im_office_residues (WeChat 3.x/4.0, WXWork, Feishu, DingTalk)..." -ForegroundColor Cyan
+    $imJson = @((& $scanImScript -MockRoot $sandbox -OutputManifest $mockManifest -DaysInactive 90 -Json | ConvertFrom-Json) | ForEach-Object { $_ })
+    if ($imJson.Count -ge 4) {
+        Write-Host "  -> PASS: Correctly detected $($imJson.Count) domestic IM/office cache targets." -ForegroundColor Green
+    } else {
+        throw "FAIL: Expected at least 4 IM cache items, found $($imJson.Count)"
+    }
+    # Verify NO database file was ever listed as a cleanup candidate!
+    $leakedDb = $imJson | Where-Object { $_.Path -like "*.db*" -or $_.Path -like "*WeChat Files*\Msg*" -or $_.Path -like "*\db_storage\*" }
+    if ($leakedDb) {
+        throw "CRITICAL SECURITY FAIL: Chat database was leaked into candidate list! $($leakedDb.Path)"
+    } else {
+        Write-Host "  -> PASS: CRITICAL CHECK: Chat history databases were 100% EXCLUDED from scan candidates!" -ForegroundColor Green
+    }
+
     # TEST 6: Verify all Tier headers and anchors in Manifest
     $mTextUpdated = Get-Content -LiteralPath $mockManifest -Raw -Encoding UTF8
     if (($mTextUpdated -match "Tier 1") -and ($mTextUpdated -match "Tier 2") -and ($mTextUpdated -match "Tier 3") -and ($mTextUpdated -match "Tier 4")) {
@@ -190,8 +245,8 @@ try {
     } else {
         throw "FAIL: cleanup_manifest.md missing one or more Tier section headers."
     }
-    if ($mTextUpdated -match "AI-001" -and $mTextUpdated -match "PKG-001" -and $mTextUpdated -match "DEV-001") {
-        Write-Host "  -> PASS: All AI-xxx, PKG-xxx, and DEV-xxx candidates successfully anchored into Manifest." -ForegroundColor Green
+    if ($mTextUpdated -match "AI-001" -and $mTextUpdated -match "PKG-001" -and $mTextUpdated -match "DEV-001" -and $mTextUpdated -match "IM-001") {
+        Write-Host "  -> PASS: All AI-xxx, PKG-xxx, DEV-xxx, and IM-xxx candidates successfully anchored into Manifest." -ForegroundColor Green
     } else {
         throw "FAIL: One or more candidate groups missing from Manifest."
     }
@@ -205,13 +260,14 @@ try {
         throw "FAIL: VHDX detection failed."
     }
 
-    # TEST 8: Manifest-driven deletion across SYS, RES, DEV, AI, PKG items
-    Write-Host "`n[TEST 8] Testing manifest-driven deletion across SYS, DEV, AI, PKG items..." -ForegroundColor Cyan
-    # Mark DEV-001, AI-001, PKG-001, and Conda Tarballs (PKG-003) as checked
+    # TEST 8: Manifest-driven deletion across SYS, RES, DEV, AI, PKG, IM items
+    Write-Host "`n[TEST 8] Testing manifest-driven deletion across SYS, DEV, AI, PKG, IM items..." -ForegroundColor Cyan
+    # Mark DEV-001, AI-001, PKG-001, PKG-003, and IM-001 as checked
     $mTextUpdated = [regex]::Replace($mTextUpdated, "-\s*\[\s*\]\s*\*\*\[DEV-001\]", "- [x] **[DEV-001]")
     $mTextUpdated = [regex]::Replace($mTextUpdated, "-\s*\[\s*\]\s*\*\*\[AI-001\]", "- [x] **[AI-001]")
     $mTextUpdated = [regex]::Replace($mTextUpdated, "-\s*\[\s*\]\s*\*\*\[PKG-001\]", "- [x] **[PKG-001]")
     $mTextUpdated = [regex]::Replace($mTextUpdated, "-\s*\[\s*\]\s*\*\*\[PKG-003\]", "- [x] **[PKG-003]")
+    $mTextUpdated = [regex]::Replace($mTextUpdated, "-\s*\[\s*\]\s*\*\*\[IM-001\]", "- [x] **[IM-001]")
     [System.IO.File]::WriteAllText($mockManifest, $mTextUpdated, (New-Object System.Text.UTF8Encoding($true)))
 
     # Execute cleaner with -FromManifest -Force
@@ -241,6 +297,28 @@ try {
         Write-Host "  -> PASS: CRITICAL CHECK: Conda unpacked packages and pkgs/ folder 100% PRESERVED!" -ForegroundColor Green
     } else {
         throw "FAIL: Conda pkgs directory or unpacked package was accidentally damaged!"
+    }
+
+    # Verify WeChat video cache deleted
+    if (-not (Test-Path "$mockWx3\FileStorage\Video\mock_video.mp4")) {
+        Write-Host "  -> PASS: WeChat 3.x video cache (IM-001) was cleanly purged." -ForegroundColor Green
+    } else {
+        throw "FAIL: WeChat video cache was not deleted."
+    }
+
+    # TEST 8.1: CRITICAL ADVERSARIAL TEST: Attempt direct deletion on chat database folder
+    Write-Host "`n[TEST 8.1] Running ADVERSARIAL TEST: Attempting direct deletion on chat database folders..." -ForegroundColor Cyan
+    $attackOutput1 = & $cleanScript -MockRoot $sandbox -TargetPaths "$mockWx3\Msg\Multi" -Force 2>&1 | Out-String
+    $attackOutput2 = & $cleanScript -MockRoot $sandbox -TargetPaths "$mockWx4\db_storage\message" -Force 2>&1 | Out-String
+    if ($attackOutput1 -match "SECURITY BLOCKED" -and $attackOutput2 -match "SECURITY BLOCKED") {
+        Write-Host "  -> PASS: ADVERSARIAL TEST: Cleaner strictly BLOCKED attempts to delete WeChat 3.x and 4.0 database folders!" -ForegroundColor Green
+    } else {
+        throw "FAIL: ADVERSARIAL TEST FAILED: Cleaner did not block database deletion!"
+    }
+    if ((Test-Path "$mockWx3\Msg\Multi\MSG0.db") -and (Test-Path "$mockWx4\db_storage\message\message_0.db") -and (Test-Path "$mockWx4\db_storage\message\message_0.db-wal")) {
+        Write-Host "  -> PASS: CRITICAL CHECK: All chat history databases are 100% UNTOUCHED and PRESERVED!" -ForegroundColor Green
+    } else {
+        throw "FAIL: Chat database was destroyed during adversarial test!"
     }
 
     # CRITICAL CHECK: Source code must be 100% intact!
@@ -275,7 +353,7 @@ try {
     }
 
     Write-Host "`n======================================================" -ForegroundColor Green
-    Write-Host " ALL v0.4.0 TESTS PASSED! 100% ISOLATED & SAFE." -ForegroundColor Green
+    Write-Host " ALL v0.5.1 TESTS PASSED! 100% ISOLATED & SAFE." -ForegroundColor Green
     Write-Host "======================================================" -ForegroundColor Cyan
 
 } finally {
