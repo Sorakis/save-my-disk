@@ -156,7 +156,8 @@ save-my-disk/
 ├── README.md                 # 项目介绍与开源文档
 ├── LICENSE                   # MIT 开源协议
 ├── tools/                    # Function Calling / OpenAPI 架构定义
-│   └── tool_definitions.json # 标准函数调用工具声明
+│   ├── tool_definitions.json # 标准函数调用工具声明
+│   └── mcp.json              # MCP 插件规范配置 (WorkBuddy, Cursor 等)
 ├── scripts/                  # 解耦的高可用自动化脚本 (支持 -Json / -DryRun)
 │   ├── audit_drives.ps1      # 只读盘符与热点体检脚本
 │   ├── clean_windows_update.ps1 # 安全停止服务、清除更新补丁、自愈重启服务
@@ -187,7 +188,13 @@ save-my-disk/
 ## 🗺️ 开源演进路线 (Roadmap)
 
 - [x] **v0.1**: Windows 核心审计、更新缓存自愈清理、Temp/回收站清理、Cleanmgr 体系化方案、多 Agent 协议接入。
-- [x] **v0.2 (Preview/Design)**: 软件卸载残留扫描、办公/聊天日志转储安全清理、隔离沙箱自动化测试套件、Function Calling OpenAPI 声明。
+- [x] **v0.2 (正式发布)**: 
+  * 软件卸载残余与空目录扫描（Steam 幽灵目录、乱码废弃文件夹）。
+  * 显卡 OTA 驱动升级缓存探测（NVIDIA App `ota-artifacts` 权衡决策支持）。
+  * 常用办公社交应用安全缓存识别（WPS 备份暂存、微信/QQ 崩溃日志、小程序沙箱组件）。
+  * **本地持久化 `cleanup_manifest.md` 呈批清单系统（彻底杜绝 LLM 上下文注意力衰减与编号/路径幻觉）**。
+  * 100% 隔离的 Mock 沙箱自动化测试套件（零接触本机真实文件）。
+  * WorkBuddy / Cursor MCP 插件规范配置 (`tools/mcp.json`)。
 - [ ] **v0.3**: Docker / WSL 虚拟硬盘跨盘无损迁移脚本与自动化压缩 (`compact`)。
 - [ ] **v0.4**: macOS 平台支持 (`~/Library/Caches`, Xcode DerivedData, Homebrew cache)。
 - [ ] **v0.5**: Linux 平台支持 (`/var/cache/apt`, journalctl 日志修剪, Docker system prune)。

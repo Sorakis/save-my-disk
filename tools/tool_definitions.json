@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "DiskTriageCleanerToolSet",
+  "title": "SaveMyDiskToolSet",
   "description": "Universal Tool & Function Calling definitions for AI Agents (WorkBuddy, Cursor, AutoGen, CrewAI, LangChain, etc.)",
   "tools": [
     {
@@ -24,7 +24,7 @@
       "type": "function",
       "function": {
         "name": "scan_app_residues",
-        "description": "Scans for uninstalled Steam game leftover directories, empty/corrupt software directories, and safe-to-clean office/chat caches (WPS, WeChat, QQ, Feishu, DingTalk). Returns itemized list with unique IDs (e.g. RES-001).",
+        "description": "Scans for uninstalled Steam game leftover directories, empty/corrupt software directories, NVIDIA driver OTA caches, and safe-to-clean office/chat caches (WPS, WeChat, QQ, Feishu, DingTalk). Generates .save-my-disk/cleanup_manifest.md.",
         "parameters": {
           "type": "object",
           "properties": {
@@ -41,7 +41,7 @@
       "type": "function",
       "function": {
         "name": "clean_selected_residues",
-        "description": "Safely cleans confirmed residue IDs or paths. Requires explicit user confirmation. Runs in dry-run mode unless force is true.",
+        "description": "Safely cleans confirmed residue IDs or reads approved checkboxes from the manifest file. Requires explicit user confirmation. Runs in dry-run mode unless force is true.",
         "parameters": {
           "type": "object",
           "properties": {
@@ -50,13 +50,17 @@
               "items": { "type": "string" },
               "description": "List of residue IDs to clean (e.g. [\"RES-001\", \"RES-002\"])."
             },
+            "from_manifest": {
+              "type": "boolean",
+              "description": "Read approved '- [x]' items directly from cleanup_manifest.md.",
+              "default": false
+            },
             "force": {
               "type": "boolean",
               "description": "Must be set to true to execute actual deletion after user confirmation.",
               "default": false
             }
-          },
-          "required": ["target_ids"]
+          }
         }
       }
     },
