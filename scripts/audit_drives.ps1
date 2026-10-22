@@ -100,6 +100,11 @@ foreach ($h in $cHotspots) {
     } else {
         # Path does not exist on disk
         if ($h.Tier -eq 1) {
+            $rec = if ($h.Name -like "*升级*" -or $h.Name -like "*Windows.old*") {
+                "未检测到历史升级残留（Windows 在升级 10 天后已自动释放，或此前已清理完毕）"
+            } else {
+                "目录无冗余文件或已被完全清空"
+            }
             $report.Hotspots += [PSCustomObject]@{
                 Tier = $h.Tier
                 Name = $h.Name
@@ -107,7 +112,7 @@ foreach ($h in $cHotspots) {
                 SizeMB = 0
                 SizeGB = 0
                 Status = "健康 / 已清理 (0 MB)"
-                Recommendation = "未检测到历史升级残留（Windows 在升级 10 天后已自动释放，或此前已清理完毕）"
+                Recommendation = $rec
             }
         }
     }

@@ -65,7 +65,7 @@ foreach ($root in $targetRoots) {
 
         # Check project activity by inspecting source files OUTSIDE the build directory
         $srcFiles = Get-ChildItem -LiteralPath $projDir.FullName -Recurse -File -Force -ErrorAction SilentlyContinue | Where-Object {
-            $_.FullName -notlike "$($bDir.FullName)*" -and $_.Extension -match '\.(rs|js|ts|jsx|tsx|py|cpp|c|h|hpp|java|kt|go|cs|toml|json)$'
+            $_.FullName -notlike "$($bDir.FullName)*" -and $_.Extension -match '\.(rs|js|ts|jsx|tsx|vue|svelte|py|ipynb|cpp|c|cc|cxx|h|hpp|java|kt|go|cs|toml|json|yaml|yml|md)$'
         }
 
         # Find latest modification among source files

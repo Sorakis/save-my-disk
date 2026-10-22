@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Post-cleanup verification script for AI Agents.
 .DESCRIPTION

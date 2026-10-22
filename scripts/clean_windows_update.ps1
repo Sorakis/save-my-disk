@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Safely purges Windows Update download cache and obsolete backups.
 .DESCRIPTION

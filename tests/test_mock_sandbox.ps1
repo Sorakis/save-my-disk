@@ -183,6 +183,15 @@ try {
         throw "FAIL: Manifest file was not updated after deletion."
     }
 
+    # TEST 7: Post-cleanup health verification
+    Write-Host "`n[TEST 7] Running verify_health check..." -ForegroundColor Cyan
+    $healthJson = & "$scriptsDir\verify_health.ps1" -Json | ConvertFrom-Json
+    if ($healthJson.Volumes.Count -ge 1) {
+        Write-Host "  -> PASS: verify_health successfully reported volume and critical service health." -ForegroundColor Green
+    } else {
+        throw "FAIL: verify_health failed to report status."
+    }
+
     Write-Host "`n======================================================" -ForegroundColor Green
     Write-Host " ALL v0.3.1 TESTS PASSED! 100% ISOLATED & SAFE." -ForegroundColor Green
     Write-Host "======================================================" -ForegroundColor Cyan

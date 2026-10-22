@@ -283,7 +283,9 @@ if (-not $OutputManifest) {
 }
 
 $reclaimableItems = $residues | Where-Object { $_.SizeMB -gt 0 }
-$totalSizeMB = [math]::Round(($reclaimableItems | Measure-Object -Property SizeMB -Sum).Sum, 2)
+$sumVal = ($reclaimableItems | Measure-Object -Property SizeMB -Sum).Sum
+if (-not $sumVal) { $sumVal = 0 }
+$totalSizeMB = [math]::Round($sumVal, 2)
 $totalSizeGB = [math]::Round($totalSizeMB / 1024, 2)
 
 $sb = [System.Text.StringBuilder]::new()

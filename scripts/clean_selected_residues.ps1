@@ -156,6 +156,13 @@ foreach ($t in $targetsToDelete) {
             }
             $freedBytes += $sz
             $deletedCount += $items.Count
+        } elseif ($p -like "*SoftwareDistribution\Download*" -and (-not $MockRoot)) {
+            Write-Host "Target is Windows Update download cache. Delegating to clean_windows_update.ps1..." -ForegroundColor Cyan
+            & "$PSScriptRoot\clean_windows_update.ps1" -Force
+            if ($t.ID -and $t.ID -ne "MANUAL") {
+                $successfullyCleanedIds += $t.ID
+            }
+            continue
         } else {
             $items = Get-ChildItem -LiteralPath $p -Recurse -File -Force -ErrorAction SilentlyContinue
             $sz = ($items | Measure-Object -Property Length -Sum).Sum

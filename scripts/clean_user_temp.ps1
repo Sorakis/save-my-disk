@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Cleans user temporary files ($env:LOCALAPPDATA\Temp) and optionally empties Recycle Bin.
 .DESCRIPTION
