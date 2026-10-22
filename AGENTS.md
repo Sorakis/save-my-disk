@@ -35,7 +35,10 @@ All scripts reside in `./scripts/` with zero external dependencies and support s
 | :--- | :--- | :--- | :--- |
 | **Audit Drives** | `powershell -ExecutionPolicy Bypass -File ./scripts/audit_drives.ps1 -Json` | Read-Only | **YES** |
 | **Scan Residues & Caches** | `powershell -ExecutionPolicy Bypass -File ./scripts/scan_app_residues.ps1 -Json` | Read-Only | **YES** |
-| **Clean Confirmed Residues** | `powershell -ExecutionPolicy Bypass -File ./scripts/clean_selected_residues.ps1 -TargetIds RES-001,RES-002 -Force` | Modifying | **NO** (Must present itemized list and confirm with user first) |
+| **Scan Inactive Dev Artifacts** | `powershell -ExecutionPolicy Bypass -File ./scripts/scan_dev_artifacts.ps1 -DaysInactive 60 -Json` | Read-Only | **YES** |
+| **Analyze WSL2 / Docker Disk** | `powershell -ExecutionPolicy Bypass -File ./scripts/manage_wsl_disk.ps1 -Json` | Read-Only | **YES** |
+| **Clean Confirmed Targets** | `powershell -ExecutionPolicy Bypass -File ./scripts/clean_selected_residues.ps1 -FromManifest -Force` | Modifying | **NO** (Must confirm with user first) |
+| **Compact WSL2 / Docker Disk** | `powershell -ExecutionPolicy Bypass -File ./scripts/manage_wsl_disk.ps1 -Compact -Force` | Modifying | **NO** (Requires admin & user confirmation) |
 | **Clean Update Cache** | `powershell -ExecutionPolicy Bypass -File ./scripts/clean_windows_update.ps1` | Modifying | **NO** (Requires admin & user confirmation) |
 | **Clean User Temp** | `powershell -ExecutionPolicy Bypass -File ./scripts/clean_user_temp.ps1` | Modifying | **NO** (Must confirm with user first) |
 | **Post-Check Health** | `powershell -ExecutionPolicy Bypass -File ./scripts/verify_health.ps1 -Json` | Read-Only | **YES** |

@@ -40,15 +40,68 @@
     {
       "type": "function",
       "function": {
+        "name": "scan_dev_artifacts",
+        "description": "Scans for inactive/zombie build outputs (node_modules, target, .vs, build) from projects untouched for at least days_inactive (default 60 days). Source code is preserved.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "scan_path": {
+              "type": "string",
+              "description": "Optional custom workspace path to scan."
+            },
+            "days_inactive": {
+              "type": "integer",
+              "description": "Minimum days of inactivity required to qualify. Default 60.",
+              "default": 60
+            },
+            "json": {
+              "type": "boolean",
+              "description": "Return structured JSON list.",
+              "default": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "manage_wsl_disk",
+        "description": "Analyzes WSL2 and Docker Desktop virtual disk (.vhdx) sizes and optionally compacts them using diskpart after shutting down WSL.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "compact": {
+              "type": "boolean",
+              "description": "Whether to perform diskpart compaction.",
+              "default": false
+            },
+            "dry_run": {
+              "type": "boolean",
+              "description": "Simulate compaction steps without executing.",
+              "default": true
+            },
+            "force": {
+              "type": "boolean",
+              "description": "Execute actual compaction after user confirmation.",
+              "default": false
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
         "name": "clean_selected_residues",
-        "description": "Safely cleans confirmed residue IDs or reads approved checkboxes from the manifest file. Requires explicit user confirmation. Runs in dry-run mode unless force is true.",
+        "description": "Safely cleans confirmed residue IDs (RES-xxx, DEV-xxx) or reads approved checkboxes from the manifest file. Requires explicit user confirmation. Runs in dry-run mode unless force is true.",
         "parameters": {
           "type": "object",
           "properties": {
             "target_ids": {
               "type": "array",
               "items": { "type": "string" },
-              "description": "List of residue IDs to clean (e.g. [\"RES-001\", \"RES-002\"])."
+              "description": "List of IDs to clean (e.g. [\"RES-001\", \"DEV-001\"])."
             },
             "from_manifest": {
               "type": "boolean",

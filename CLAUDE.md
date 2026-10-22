@@ -13,7 +13,10 @@ This file configures Claude Code when working in this project or utilizing this 
 - **Audit Storage (Read-Only)**: `powershell -ExecutionPolicy Bypass -File ./scripts/audit_drives.ps1`
 - **Audit Storage (JSON)**: `powershell -ExecutionPolicy Bypass -File ./scripts/audit_drives.ps1 -Json`
 - **Scan Residues & Caches**: `powershell -ExecutionPolicy Bypass -File ./scripts/scan_app_residues.ps1`
-- **Clean Confirmed Residue**: `powershell -ExecutionPolicy Bypass -File ./scripts/clean_selected_residues.ps1 -TargetIds RES-001 -Force`
+- **Scan Inactive Dev Artifacts**: `powershell -ExecutionPolicy Bypass -File ./scripts/scan_dev_artifacts.ps1 -DaysInactive 60`
+- **Analyze WSL2 / Docker Disk**: `powershell -ExecutionPolicy Bypass -File ./scripts/manage_wsl_disk.ps1`
+- **Clean Confirmed Targets**: `powershell -ExecutionPolicy Bypass -File ./scripts/clean_selected_residues.ps1 -FromManifest -Force`
+- **Compact WSL2 / Docker Disk (Requires Admin)**: `powershell -ExecutionPolicy Bypass -File ./scripts/manage_wsl_disk.ps1 -Compact -Force`
 - **Clean Update Cache (Requires Admin & User Consent)**: `powershell -ExecutionPolicy Bypass -File ./scripts/clean_windows_update.ps1`
 - **Clean Temp Files**: `powershell -ExecutionPolicy Bypass -File ./scripts/clean_user_temp.ps1`
 - **Verify Status**: `powershell -ExecutionPolicy Bypass -File ./scripts/verify_health.ps1`

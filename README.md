@@ -163,7 +163,9 @@ save-my-disk/
 │   ├── clean_windows_update.ps1 # 安全停止服务、清除更新补丁、自愈重启服务
 │   ├── clean_user_temp.ps1   # 安全清理 Temp 目录与回收站
 │   ├── scan_app_residues.ps1 # 软件残留与安全缓存扫描器
-│   ├── clean_selected_residues.ps1 # 基于 ID/路径的精准清理器
+│   ├── scan_dev_artifacts.ps1 # 沉睡工程僵尸构建产物探测器 (node_modules/target/.vs)
+│   ├── manage_wsl_disk.ps1   # WSL2 & Docker 虚拟硬盘(.vhdx)分析与无损压缩
+│   ├── clean_selected_residues.ps1 # 基于 ID/Manifest 勾选项的精准清理器
 │   └── verify_health.ps1     # 空间差值与系统服务存活核验
 ├── tests/                    # 100% 隔离的自动化 Mock 沙箱测试套件
 │   └── test_mock_sandbox.ps1 # 零接触本机实际文件的验证测试
@@ -188,14 +190,12 @@ save-my-disk/
 ## 🗺️ 开源演进路线 (Roadmap)
 
 - [x] **v0.1**: Windows 核心审计、更新缓存自愈清理、Temp/回收站清理、Cleanmgr 体系化方案、多 Agent 协议接入。
-- [x] **v0.2 (正式发布)**: 
-  * 软件卸载残余与空目录扫描（Steam 幽灵目录、乱码废弃文件夹）。
-  * 显卡 OTA 驱动升级缓存探测（NVIDIA App `ota-artifacts` 权衡决策支持）。
-  * 常用办公社交应用安全缓存识别（WPS 备份暂存、微信/QQ 崩溃日志、小程序沙箱组件）。
-  * **本地持久化 `cleanup_manifest.md` 呈批清单系统（彻底杜绝 LLM 上下文注意力衰减与编号/路径幻觉）**。
-  * 100% 隔离的 Mock 沙箱自动化测试套件（零接触本机真实文件）。
-  * WorkBuddy / Cursor MCP 插件规范配置 (`tools/mcp.json`)。
-- [ ] **v0.3**: Docker / WSL 虚拟硬盘跨盘无损迁移脚本与自动化压缩 (`compact`)。
+- [x] **v0.2**: 软件卸载残留扫描、NVIDIA OTA 驱动缓存治理、微信/WPS 缓存识别、持久化 Manifest 清单系统、全隔离 Mock 沙箱测试。
+- [x] **v0.3.0 (正式发布 - 开发者重度环境专项治理)**:
+  * WSL2 与 Docker Desktop 虚拟磁盘 (`.vhdx`) 容量分析与 `diskpart` 安全无损压缩引擎。
+  * 沉睡工程僵尸构建产物探测（`node_modules`、Rust `target`、C++ `.vs`、Gradle `build`，按 60 天不活跃阈值精准筛选）。
+  * 源码绝对保护屏障（`package.json`/`Cargo.toml` 与源码 100% 留存，仅清理衍生构建产物）。
+  * Manifest 清单文件驱动的批量打钩清理（支持 `-FromManifest` 一键执行并在落盘标记审计账本）。
 - [ ] **v0.4**: macOS 平台支持 (`~/Library/Caches`, Xcode DerivedData, Homebrew cache)。
 - [ ] **v0.5**: Linux 平台支持 (`/var/cache/apt`, journalctl 日志修剪, Docker system prune)。
 

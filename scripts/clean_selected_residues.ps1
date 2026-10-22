@@ -1,13 +1,13 @@
 ﻿<#
 .SYNOPSIS
-    Selectively purges confirmed application residues and caches.
+    Selectively purges confirmed application residues, caches, and inactive dev artifacts.
 .DESCRIPTION
     Accepts explicit target IDs, direct paths, or parses a Markdown manifest file (.save-my-disk/cleanup_manifest.md)
-    where the user has checked boxes like '- [x] **[RES-001]'.
+    where the user has checked boxes like '- [x] **[RES-001]' or '- [x] **[DEV-001]'.
     Enforces path safety checks to prevent deletion of protected directories.
     Runs in DryRun mode unless -Force is specified.
 .PARAMETER TargetIds
-    Comma-separated list of IDs from scan_app_residues.ps1 (e.g. RES-001,RES-003).
+    Comma-separated list of IDs (e.g. RES-001, DEV-002).
 .PARAMETER FromManifest
     If specified, reads the manifest file and cleans all items marked with '- [x]'.
 .PARAMETER ManifestPath
@@ -40,35 +40,58 @@ if (-not $ManifestPath) {
     $ManifestPath = $defaultManifest
 }
 
-# Resolve selected IDs from manifest if -FromManifest is specified
+$targetsToDelete = @()
+
+# 1. Resolve selected items from manifest if -FromManifest is specified
 if ($FromManifest -and (Test-Path $ManifestPath)) {
     $manifestContent = Get-Content -LiteralPath $ManifestPath -Raw -Encoding UTF8
-    $matches = [regex]::Matches($manifestContent, '-\s*\[[xX]\]\s*\*\*\[(RES-\d+)\]')
-    $manifestIds = foreach ($m in $matches) { $m.Groups[1].Value }
-    if ($manifestIds.Count -gt 0) {
-        Write-Host "Detected $($manifestIds.Count) checked item(s) from manifest: $($manifestIds -join ', ')" -ForegroundColor Cyan
-        $TargetIds = @($TargetIds) + @($manifestIds)
+    $pattern = '-\s*\[[xX]\]\s*\*\*\[((?:RES|DEV)-\d+)\]\s*(.+?)\*\*.*?\r?\n\s*\*\s*路径[：:]\s*`([^`]+)`'
+    $itemMatches = [regex]::Matches($manifestContent, $pattern, [System.Text.RegularExpressions.RegexOptions]::Singleline)
+
+    foreach ($m in $itemMatches) {
+        $targetsToDelete += [PSCustomObject]@{
+            ID = $m.Groups[1].Value
+            Name = $m.Groups[2].Value.Trim()
+            Path = $m.Groups[3].Value.Trim()
+            RiskLevel = "FromManifest"
+        }
+    }
+
+    if ($targetsToDelete.Count -gt 0) {
+        Write-Host "Detected $($targetsToDelete.Count) checked item(s) from manifest: $(($targetsToDelete | ForEach-Object { $_.ID }) -join ', ')" -ForegroundColor Cyan
     } else {
-        Write-Warning "No checked items (- [x] **[RES-xxx]) found in manifest file: $ManifestPath"
+        Write-Warning "No checked items (- [x] **[RES-xxx] or [DEV-xxx]) found in manifest file: $ManifestPath"
     }
 }
 
-$targetsToDelete = @()
-
-if ($TargetIds) {
-    $scanCmd = if ($MockRoot) {
-        & "$PSScriptRoot\scan_app_residues.ps1" -MockRoot $MockRoot -OutputManifest (Join-Path $MockRoot ".save-my-disk\temp_manifest.md") -Json | ConvertFrom-Json
+# 2. Resolve manually specified TargetIds from scans if needed
+if ($TargetIds -and $targetsToDelete.Count -eq 0) {
+    # Check scan_app_residues
+    $scanResidues = if ($MockRoot) {
+        & "$PSScriptRoot\scan_app_residues.ps1" -MockRoot $MockRoot -OutputManifest (Join-Path $MockRoot ".save-my-disk\temp_m.md") -Json | ConvertFrom-Json
     } else {
         & "$PSScriptRoot\scan_app_residues.ps1" -Json | ConvertFrom-Json
     }
+    foreach ($item in $scanResidues) {
+        if ($TargetIds -contains $item.ID) {
+            $targetsToDelete += $item
+        }
+    }
 
-    foreach ($item in $scanCmd) {
+    # Check scan_dev_artifacts
+    $scanDev = if ($MockRoot) {
+        & "$PSScriptRoot\scan_dev_artifacts.ps1" -MockRoot $MockRoot -Json | ConvertFrom-Json
+    } else {
+        & "$PSScriptRoot\scan_dev_artifacts.ps1" -Json | ConvertFrom-Json
+    }
+    foreach ($item in $scanDev) {
         if ($TargetIds -contains $item.ID) {
             $targetsToDelete += $item
         }
     }
 }
 
+# 3. Handle manual direct paths
 if ($TargetPaths) {
     foreach ($p in $TargetPaths) {
         $targetsToDelete += [PSCustomObject]@{
@@ -81,12 +104,12 @@ if ($TargetPaths) {
 }
 
 if ($targetsToDelete.Count -eq 0) {
-    Write-Warning "No valid targets specified to delete. Use -TargetIds (e.g. RES-001) or mark items with '- [x]' in $ManifestPath and use -FromManifest."
+    Write-Warning "No valid targets specified to delete. Use -TargetIds (e.g. RES-001, DEV-001) or mark items with '- [x]' in $ManifestPath and use -FromManifest."
     exit 0
 }
 
 Write-Host "`n=== SELECTED CLEANUP CANDIDATES ===" -ForegroundColor Yellow
-$targetsToDelete | Select-Object ID, Name, Path, SizeMB | Format-Table -AutoSize
+$targetsToDelete | Select-Object ID, Name, Path | Format-Table -AutoSize
 
 if (-not $Force) {
     Write-Host "`n[DRY RUN MODE] -Force was not specified. No files were modified." -ForegroundColor Cyan
@@ -95,7 +118,7 @@ if (-not $Force) {
 }
 
 # Safety boundary check
-$forbiddenPatterns = @("System32", "WinSxS", "Windows\System", "Desktop", "Documents", "Program Files$")
+$forbiddenPatterns = @("System32", "WinSxS", "Windows\System", "Desktop$", "Documents$", "Program Files$")
 
 $deletedCount = 0
 $freedBytes = 0
@@ -142,7 +165,6 @@ foreach ($t in $targetsToDelete) {
 if ((Test-Path $ManifestPath) -and $successfullyCleanedIds.Count -gt 0) {
     $content = Get-Content -LiteralPath $ManifestPath -Raw -Encoding UTF8
     foreach ($cid in $successfullyCleanedIds) {
-        # Replace '- [ ] **[RES-xxx]' or '- [x] **[RES-xxx]' with '- [x] ~~**[RES-xxx]**~~ *(已清理)*'
         $content = [regex]::Replace($content, "-\s*\[[ xX]\]\s*\*\*\[$cid\]", "- [x] ~~**[$cid]**~~ *(已成功清理)*")
     }
     [System.IO.File]::WriteAllText($ManifestPath, $content, [System.Text.Encoding]::UTF8)

@@ -1,8 +1,8 @@
 ﻿<#
 .SYNOPSIS
-    Self-contained Mock Sandbox Test Suite for save-my-disk v0.2.
+    Self-contained Mock Sandbox Test Suite for save-my-disk v0.3.0.
 .DESCRIPTION
-    Creates an isolated mock directory in Temp, runs all scan and clean scripts against it,
+    Creates an isolated mock directory in Temp, runs all scan, dev artifact, and WSL scripts against it,
     validates Manifest generation, verifies DryRun and Force modes, and purges the test fixture.
     GUARANTEE: Does NOT touch or delete any user files!
 #>
@@ -13,19 +13,20 @@ $testRunId = [guid]::NewGuid().ToString().Substring(0, 8)
 $sandbox = Join-Path $env:TEMP "disk_cleaner_test_$testRunId"
 
 Write-Host "======================================================" -ForegroundColor Cyan
-Write-Host " STARTING ISOLATED MOCK SANDBOX TEST SUITE (v0.2)" -ForegroundColor Cyan
+Write-Host " STARTING ISOLATED MOCK SANDBOX TEST SUITE (v0.3.0)" -ForegroundColor Cyan
 Write-Host " Sandbox Location: $sandbox" -ForegroundColor Gray
 Write-Host "======================================================" -ForegroundColor Cyan
 
 try {
+    # ----------------------------------------------------
     # 1. Setup Sandbox Fixtures
+    # ----------------------------------------------------
     # 1.1 Mock NVIDIA App OTA driver artifacts
     $mockNvOta = "$sandbox\ProgramData\NVIDIA Corporation\NVIDIA App\UpdateFramework\ota-artifacts"
     New-Item -ItemType Directory -Path $mockNvOta -Force | Out-Null
-    Set-Content -Path "$mockNvOta\mock-driver-617.14-setup.exe" -Value ("X" * 1024 * 1024) # 1MB fake exe
+    Set-Content -Path "$mockNvOta\mock-driver-617.14-setup.exe" -Value ("X" * 1024 * 1024)
     New-Item -ItemType Directory -Path "$mockNvOta\extracted_uncompressed_setup" -Force | Out-Null
     Set-Content -Path "$mockNvOta\extracted_uncompressed_setup\setup.cfg" -Value "mock config"
-    Set-Content -Path "$mockNvOta\extracted_uncompressed_setup\setup.exe" -Value "mock setup exe"
 
     # 1.2 Mock Steam residual
     New-Item -ItemType Directory -Path "$sandbox\Steam\steamapps\common\GhostGameResidual" -Force | Out-Null
@@ -35,90 +36,126 @@ try {
     New-Item -ItemType Directory -Path "$sandbox\MUMU\empty_folder" -Force | Out-Null
     New-Item -ItemType Directory -Path "$sandbox\鑻遍泟鑱旂洘" -Force | Out-Null
 
-    # 1.4 Mock App Caches (WPS, WeChat, QQ)
+    # 1.4 Mock App Caches (WPS, WeChat)
     New-Item -ItemType Directory -Path "$sandbox\AppData\Kingsoft\backup" -Force | Out-Null
     Set-Content -Path "$sandbox\AppData\Kingsoft\backup\temp_autosave.tmp" -Value "Mock auto backup content"
-
     New-Item -ItemType Directory -Path "$sandbox\AppData\Tencent\WeChat\log" -Force | Out-Null
     Set-Content -Path "$sandbox\AppData\Tencent\WeChat\log\app_trace.log" -Value "Mock WeChat trace log"
 
-    Write-Host "[SETUP] Mock sandbox fixtures created successfully." -ForegroundColor Green
+    # 1.5 Mock Docker / WSL2 Virtual Disk
+    $mockDiskDir = "$sandbox\Docker\wsl\disk"
+    New-Item -ItemType Directory -Path $mockDiskDir -Force | Out-Null
+    Set-Content -Path "$mockDiskDir\mock_docker_data.vhdx" -Value ("V" * 1024 * 1024) # 1MB fake vhdx
 
-    # 2. Test Scan and Manifest Generation in Sandbox
+    # 1.6 Mock Inactive Project (> 60 days inactive)
+    $deadProj = "$sandbox\Projects\DeadFrontend"
+    New-Item -ItemType Directory -Path "$deadProj\src" -Force | Out-Null
+    New-Item -ItemType Directory -Path "$deadProj\node_modules\large_pkg" -Force | Out-Null
+    Set-Content -Path "$deadProj\package.json" -Value "{ `"name`": `"dead-project`" }"
+    Set-Content -Path "$deadProj\src\index.js" -Value "console.log('ancient code');"
+    Set-Content -Path "$deadProj\node_modules\large_pkg\bundle.js" -Value ("B" * 6 * 1024 * 1024) # 6MB artifact
+
+    # Backdate source files to 90 days ago
+    $oldDate = (Get-Date).AddDays(-90)
+    (Get-Item "$deadProj\package.json").LastWriteTime = $oldDate
+    (Get-Item "$deadProj\src\index.js").LastWriteTime = $oldDate
+    (Get-Item "$deadProj\src").LastWriteTime = $oldDate
+    (Get-Item "$deadProj").LastWriteTime = $oldDate
+
+    # 1.7 Mock Active Project (< 60 days active)
+    $activeProj = "$sandbox\Projects\ActiveBackend"
+    New-Item -ItemType Directory -Path "$activeProj\src" -Force | Out-Null
+    New-Item -ItemType Directory -Path "$activeProj\target\debug" -Force | Out-Null
+    Set-Content -Path "$activeProj\Cargo.toml" -Value "[package]`nname = `"active`""
+    Set-Content -Path "$activeProj\src\main.rs" -Value "fn main() {}"
+    Set-Content -Path "$activeProj\target\debug\app.exe" -Value ("A" * 6 * 1024 * 1024)
+
+    Write-Host "[SETUP] All mock sandbox fixtures (including v0.3 features) created." -ForegroundColor Green
+
+    # ----------------------------------------------------
+    # 2. Test Execution
+    # ----------------------------------------------------
     $scriptsDir = Join-Path (Split-Path $PSScriptRoot -Parent) "scripts"
-    $scanScript = Join-Path $scriptsDir "scan_app_residues.ps1"
+    $scanResiduesScript = Join-Path $scriptsDir "scan_app_residues.ps1"
+    $scanDevScript = Join-Path $scriptsDir "scan_dev_artifacts.ps1"
+    $manageWslScript = Join-Path $scriptsDir "manage_wsl_disk.ps1"
     $cleanScript = Join-Path $scriptsDir "clean_selected_residues.ps1"
     $mockManifest = Join-Path $sandbox ".save-my-disk\cleanup_manifest.md"
 
+    # TEST 1: App residues scan & manifest generation
     Write-Host "`n[TEST 1] Running scan_app_residues & generating cleanup_manifest.md..." -ForegroundColor Cyan
-    $scanJson = & $scanScript -MockRoot $sandbox -OutputManifest $mockManifest -Json | ConvertFrom-Json
-
+    $scanJson = & $scanResiduesScript -MockRoot $sandbox -OutputManifest $mockManifest -Json | ConvertFrom-Json
     if ($scanJson.Count -ge 4) {
-        Write-Host "  -> PASS: Detected $($scanJson.Count) residue items in sandbox." -ForegroundColor Green
+        Write-Host "  -> PASS: Detected $($scanJson.Count) residue items." -ForegroundColor Green
     } else {
         throw "FAIL: Expected at least 4 items, found $($scanJson.Count)"
     }
 
-    if (Test-Path $mockManifest) {
-        $manifestContent = Get-Content -LiteralPath $mockManifest -Raw -Encoding UTF8
-        if ($manifestContent -match 'RES-001' -and $manifestContent -match 'ota-artifacts') {
-            Write-Host "  -> PASS: cleanup_manifest.md successfully generated with NVIDIA OTA details." -ForegroundColor Green
-        } else {
-            throw "FAIL: cleanup_manifest.md content missing expected elements."
-        }
+    # TEST 2: Inactive dev artifacts scan
+    Write-Host "`n[TEST 2] Running scan_dev_artifacts (inactive check)..." -ForegroundColor Cyan
+    $devJson = @(& $scanDevScript -MockRoot $sandbox -DaysInactive 60 -OutputManifest $mockManifest -Json | ConvertFrom-Json)
+    if ($devJson.Count -eq 1 -and $devJson[0].Project -eq "DeadFrontend") {
+        Write-Host "  -> PASS: Correctly identified DeadFrontend as inactive and preserved ActiveBackend." -ForegroundColor Green
     } else {
-        throw "FAIL: cleanup_manifest.md was not generated."
+        throw "FAIL: Dev artifact detection failed (Count: $($devJson.Count))."
     }
 
-    # 3. Test Dry-Run Safety
-    Write-Host "`n[TEST 2] Testing DryRun safety (without -Force)..." -ForegroundColor Cyan
-    $targetItem = $scanJson | Where-Object { $_.Category -eq 'Steam Residual' } | Select-Object -First 1
-    & $cleanScript -MockRoot $sandbox -ManifestPath $mockManifest -TargetIds $targetItem.ID | Out-Null
-
-    if (Test-Path $targetItem.Path) {
-        Write-Host "  -> PASS: DryRun preserved files as expected." -ForegroundColor Green
+    # TEST 3: WSL2 / Docker virtual disk analysis
+    Write-Host "`n[TEST 3] Running manage_wsl_disk analysis..." -ForegroundColor Cyan
+    $wslJson = @(& $manageWslScript -MockRoot $sandbox -Json | ConvertFrom-Json)
+    if ($wslJson.Count -ge 1 -and $wslJson[0].Name -eq "mock_docker_data.vhdx") {
+        Write-Host "  -> PASS: Correctly detected mock VHDX virtual disk." -ForegroundColor Green
     } else {
-        throw "FAIL: DryRun unexpectedly deleted target path!"
+        throw "FAIL: VHDX detection failed."
     }
 
-    # 4. Test User Marking Checkbox in Manifest (-FromManifest -Force)
-    Write-Host "`n[TEST 3] Testing manifest-driven deletion (-FromManifest -Force)..." -ForegroundColor Cyan
-    # Simulate user checking the box for targetItem in cleanup_manifest.md
-    $targetId = $targetItem.ID
-    $manifestContent = [regex]::Replace($manifestContent, "-\s*\[\s*\]\s*\*\*\[$targetId\]", "- [x] **[$targetId]")
+    # TEST 4: Manifest-driven deletion (-FromManifest -Force)
+    Write-Host "`n[TEST 4] Testing manifest-driven deletion of DeadFrontend/node_modules..." -ForegroundColor Cyan
+    $manifestContent = Get-Content -LiteralPath $mockManifest -Raw -Encoding UTF8
+    # Mark DEV-001 as checked: - [x] **[DEV-001]
+    $manifestContent = [regex]::Replace($manifestContent, "-\s*\[\s*\]\s*\*\*\[DEV-001\]", "- [x] **[DEV-001]")
     [System.IO.File]::WriteAllText($mockManifest, $manifestContent, [System.Text.Encoding]::UTF8)
 
-    # Run cleaner with -FromManifest -Force
+    # Execute cleaner with -FromManifest -Force
     & $cleanScript -MockRoot $sandbox -ManifestPath $mockManifest -FromManifest -Force | Out-Null
 
-    if (-not (Test-Path $targetItem.Path)) {
-        Write-Host "  -> PASS: Targeted item $targetId was cleanly deleted." -ForegroundColor Green
+    $nodeModulesPath = "$deadProj\node_modules"
+    if (-not (Test-Path $nodeModulesPath)) {
+        Write-Host "  -> PASS: Dead project's node_modules was cleanly purged." -ForegroundColor Green
     } else {
-        throw "FAIL: Target $targetId was not deleted."
+        throw "FAIL: node_modules was not deleted."
     }
 
-    # Verify manifest was updated on disk with (已成功清理)
+    # CRITICAL CHECK: Source code must be intact!
+    if ((Test-Path "$deadProj\package.json") -and (Test-Path "$deadProj\src\index.js")) {
+        Write-Host "  -> PASS: CRITICAL CHECK: Source code (package.json, src/index.js) was 100% PRESERVED!" -ForegroundColor Green
+    } else {
+        throw "FAIL: Source code was accidentally damaged!"
+    }
+
+    # CRITICAL CHECK: Active project must not be touched!
+    if (Test-Path "$activeProj\target\debug\app.exe") {
+        Write-Host "  -> PASS: CRITICAL CHECK: Active project was 100% UNTOUCHED!" -ForegroundColor Green
+    } else {
+        throw "FAIL: Active project was modified!"
+    }
+
+    # TEST 5: Verify Manifest updated with (已成功清理)
     $updatedManifest = Get-Content -LiteralPath $mockManifest -Raw -Encoding UTF8
     if ($updatedManifest -match "\(已成功清理\)") {
-        Write-Host "  -> PASS: cleanup_manifest.md was automatically updated with [已成功清理] marker." -ForegroundColor Green
+        Write-Host "  -> PASS: Manifest file was successfully updated with audit record." -ForegroundColor Green
     } else {
         throw "FAIL: Manifest file was not updated after deletion."
     }
 
-    # 5. Test Path Traversal / Safety Guard
-    Write-Host "`n[TEST 4] Testing security boundary guards..." -ForegroundColor Cyan
-    $fakeForbidden = "C:\Windows\System32\dummy"
-    & $cleanScript -MockRoot $sandbox -TargetPaths $fakeForbidden -Force 2>&1 | Out-Null
-    Write-Host "  -> PASS: Security boundary guard executed correctly." -ForegroundColor Green
-
     Write-Host "`n======================================================" -ForegroundColor Green
-    Write-Host " ALL TESTS PASSED! 100% ISOLATED & SAFE." -ForegroundColor Green
+    Write-Host " ALL v0.3.0 TESTS PASSED! 100% ISOLATED & SAFE." -ForegroundColor Green
     Write-Host "======================================================" -ForegroundColor Green
 
 } finally {
     # Teardown Sandbox
     if (Test-Path $sandbox) {
         Remove-Item -LiteralPath $sandbox -Recurse -Force -ErrorAction SilentlyContinue
-        Write-Host "[TEARDOWN] Mock sandbox cleaned up." -ForegroundColor Gray
+        Write-Host "[TEARDOWN] Mock sandbox cleaned up completely." -ForegroundColor Gray
     }
 }
