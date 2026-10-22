@@ -62,19 +62,19 @@ flowchart TD
 
 ---
 
-### ⚡ 一键给 Agent 的安装与运行指令 (推荐 ⭐⭐⭐⭐⭐)
+### ⚡ 一键给 Agent 的安装与就绪指令 (推荐 ⭐⭐⭐⭐⭐)
 
 你**无需手动下载配置**！直接将下面这段指令完整复制，粘贴发送给你的任意 AI 编程助手（**Antigravity、WorkBuddy、Cursor、Claude Code、OpenCode、Codex 等**）：
 
 ```text
-请帮我把 https://github.com/Sorakis/save-my-disk.git 克隆到当前工作区的 .tools/save-my-disk 目录中，读取其中的 SKILL.md 与 AGENTS.md 规范；然后作为 save-my-disk 助手，对当前电脑执行一次只读磁盘体检，向我汇报各盘空间占用分布与安全清理候选清单，并提示我下一步如何选择性清理。
+请帮我把 https://github.com/Sorakis/save-my-disk.git 克隆到当前工作区的 .tools/save-my-disk 目录中，读取其中的 SKILL.md 与 AGENTS.md 规范；安装完成后，请向我确认已安装就绪，并询问我是否要开始执行第一次只读磁盘体检。在我明确回复同意前，请不要自动执行任何扫描或清理。
 ```
 
 > **Agent 收到这句口令后会自动**：
-> 1. 执行 Git 克隆将仓库拉取到工作区；
-> 2. 识别并装载其中的全套多 Agent 协议与工具；
-> 3. 自动执行只读体检并列出带编号的候选清理清单；
-> 4. 给出清晰指引，等待你挑选确认后再动手！
+> 1. 执行 Git 克隆将仓库拉取到工作区的 `.tools/save-my-disk`；
+> 2. 识别并装载其中的多 Agent 协议与安全准则；
+> 3. **礼貌停下向你确认**：“✅ `save-my-disk` 已安装就绪，请问现在是否开始只读磁盘体检？”
+> 4. **必须等待你明确回复“开始”后**，AI 才会执行只读扫描并呈批候选清单，绝对不越俎代庖！
 
 ---
 
