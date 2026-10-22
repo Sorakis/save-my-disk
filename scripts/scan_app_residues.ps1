@@ -318,6 +318,9 @@ foreach ($item in $tier1Items) {
     }
 }
 
+[void]$sb.AppendLine('<!-- TIER1_PKG_CACHES_PLACEHOLDER -->')
+[void]$sb.AppendLine('')
+
 # Section 2: Tier 2
 [void]$sb.AppendLine('## 🟡 Tier 2: 开发者与环境大缓存 (需权衡决策)')
 [void]$sb.AppendLine('')
@@ -334,6 +337,10 @@ if ($tier2Items.Count -eq 0) {
         [void]$sb.AppendLine('')
     }
 }
+[void]$sb.AppendLine('<!-- TIER2_AI_MODELS_PLACEHOLDER -->')
+[void]$sb.AppendLine('')
+[void]$sb.AppendLine('<!-- TIER2_PKG_CACHES_PLACEHOLDER -->')
+[void]$sb.AppendLine('')
 [void]$sb.AppendLine('<!-- DEV_ARTIFACTS_PLACEHOLDER -->')
 [void]$sb.AppendLine('')
 

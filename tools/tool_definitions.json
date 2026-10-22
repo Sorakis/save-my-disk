@@ -66,6 +66,40 @@
     {
       "type": "function",
       "function": {
+        "name": "scan_ai_models",
+        "description": "Scans for local AI and machine learning model caches including Hugging Face Hub (blobs without symlink double counting), Ollama GGUF models, and PyTorch checkpoints. Injects findings into cleanup_manifest.md.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "json": {
+              "type": "boolean",
+              "description": "Return structured JSON list.",
+              "default": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "scan_package_caches",
+        "description": "Scans for global developer package manager caches: pip wheel cache, npm offline tarballs, Conda pkg tarballs and unpacked pkgs, and Gradle caches. Injects findings into cleanup_manifest.md.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "json": {
+              "type": "boolean",
+              "description": "Return structured JSON list.",
+              "default": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
         "name": "manage_wsl_disk",
         "description": "Analyzes WSL2 and Docker Desktop virtual disk (.vhdx) sizes and optionally compacts them using diskpart after shutting down WSL.",
         "parameters": {

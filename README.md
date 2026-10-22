@@ -5,8 +5,8 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![CI Sandbox](https://github.com/Sorakis/save-my-disk/actions/workflows/test.yml/badge.svg)](https://github.com/Sorakis/save-my-disk/actions)
-[![Release](https://img.shields.io/badge/Release-v0.3.1-orange.svg)](https://github.com/Sorakis/save-my-disk/releases)
-[![Platform](https://img.shields.io/badge/Platform-Windows%20(v0.3.1)%20%7C%20Linux%20%26%20macOS%20(Planned)-0078D6.svg)]()
+[![Release](https://img.shields.io/badge/Release-v0.4.0-orange.svg)](https://github.com/Sorakis/save-my-disk/releases)
+[![Platform](https://img.shields.io/badge/Platform-Windows%20(v0.4.0)%20%7C%20Linux%20%26%20macOS%20(Planned)-0078D6.svg)]()
 [![Compatibility](https://img.shields.io/badge/Agents-Antigravity%20%7C%20Codex%20%7C%20ClaudeCode%20%7C%20Cursor%20%7C%20WorkBuddy-brightgreen.svg)]()
 
 ---
@@ -180,6 +180,8 @@ save-my-disk/
 │   ├── clean_windows_update.ps1 # 安全停止服务、清除更新补丁、自愈重启服务
 │   ├── clean_user_temp.ps1   # 安全清理 Temp 目录与回收站
 │   ├── scan_app_residues.ps1 # 软件残留与安全缓存扫描器
+│   ├── scan_package_caches.ps1 # 全局包管理器缓存治理 (pip, npm, Conda, Gradle)
+│   ├── scan_ai_models.ps1    # AI/ML 大模型权重与缓存透视 (Hugging Face, Ollama, PyTorch)
 │   ├── scan_dev_artifacts.ps1 # 沉睡工程僵尸构建产物探测器 (node_modules/target/.vs)
 │   ├── manage_wsl_disk.ps1   # WSL2 & Docker 虚拟硬盘(.vhdx)分析与无损压缩
 │   ├── clean_selected_residues.ps1 # 基于 ID/Manifest 勾选项的精准清理器
@@ -213,8 +215,12 @@ save-my-disk/
   * 沉睡工程僵尸构建产物探测（`node_modules`、Rust `target`、C++ `.vs`、Gradle `build`，按 60 天不活跃阈值精准筛选）。
   * 源码绝对保护屏障（`package.json`/`Cargo.toml` 与源码 100% 留存，仅清理衍生构建产物）。
   * Manifest 清单文件驱动的批量打钩清理（支持 `-FromManifest` 一键执行并在落盘标记审计账本）。
-- [ ] **v0.4**: macOS 平台支持 (`~/Library/Caches`, Xcode DerivedData, Homebrew cache)。
-- [ ] **v0.5**: Linux 平台支持 (`/var/cache/apt`, journalctl 日志修剪, Docker system prune)。
+- [x] **v0.4.0 (AI 大模型与全局包管理器大缓存专项治理)**:
+  * **AI/ML 存储透视 (`scan_ai_models.ps1`)**：Hugging Face 符号链接防重计引擎、Ollama 全局 Blobs 共享库检测与靶向 `ollama rm` 引导、PyTorch Checkpoints 智能归类。
+  * **全局包管理缓存治理 (`scan_package_caches.ps1`)**：pip (`LOCALAPPDATA` / `PIP_CACHE_DIR`)、npm 全局下载缓存、Conda 双轨分类（Tier 1 `.tar.bz2/.conda` 压缩包 vs Tier 2 已解压 packages）、Gradle `caches/modules-2`。
+  * **安全屏障与沙箱隔离**：严禁误伤 Conda 活跃环境 (`envs/`) 与工程根目录，沙箱测试全隔离拦截防本机缓存穿透。
+- [ ] **v0.5**: macOS 平台支持 (`~/Library/Caches`, Xcode DerivedData, Homebrew cache)。
+- [ ] **v0.6**: Linux 平台支持 (`/var/cache/apt`, journalctl 日志修剪, Docker system prune)。
 
 ---
 
