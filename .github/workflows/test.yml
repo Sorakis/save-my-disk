@@ -1,0 +1,20 @@
+name: CI Sandbox Verification
+
+on:
+  push:
+    branches: [ main ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  verify-sandbox:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Run Isolated Mock Sandbox Test Suite
+        shell: powershell
+        run: |
+          powershell -ExecutionPolicy Bypass -File .\tests\test_mock_sandbox.ps1

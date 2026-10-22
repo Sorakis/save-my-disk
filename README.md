@@ -4,8 +4,10 @@
 > 面向 AI 编程助手（Antigravity, OpenAI Codex, Claude Code, WorkBuddy, OpenCode, DeepSeek Harness, Cursor 等）与广大开发者的智能磁盘诊断与安全瘦身工作流。
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Platform](https://img.shields.io/badge/Platform-Windows%20(v0.1)%20%7C%20Linux%20%26%20macOS%20(Planned)-0078D6.svg)]()
-[![Compatibility](https://img.shields.io/badge/Agents-Antigravity%20%7C%20WorkBuddy%20%7C%20Codex%20%7C%20ClaudeCode%20%7C%20DeepSeek%20%7C%20Cursor-brightgreen.svg)]()
+[![CI Sandbox](https://github.com/Sorakis/save-my-disk/actions/workflows/test.yml/badge.svg)](https://github.com/Sorakis/save-my-disk/actions)
+[![Release](https://img.shields.io/badge/Release-v0.3.1-orange.svg)](https://github.com/Sorakis/save-my-disk/releases)
+[![Platform](https://img.shields.io/badge/Platform-Windows%20(v0.3.1)%20%7C%20Linux%20%26%20macOS%20(Planned)-0078D6.svg)]()
+[![Compatibility](https://img.shields.io/badge/Agents-Antigravity%20%7C%20Codex%20%7C%20ClaudeCode%20%7C%20Cursor%20%7C%20WorkBuddy-brightgreen.svg)]()
 
 ---
 
