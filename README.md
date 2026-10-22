@@ -46,12 +46,64 @@ flowchart TD
 
 | 平台 / Agent | 适配配置文件 | 接入方式 |
 | :--- | :--- | :--- |
-| **Antigravity** | [`SKILL.md`](./SKILL.md) | 作为通用技能自动加载（通过 YAML Frontmatter 自动意图唤起） |
-| **OpenAI Codex** | [`AGENTS.md`](./AGENTS.md) | 自动读取指令与 CLI 注册表 |
+| **Antigravity** | [`SKILL.md`](./SKILL.md) | 作为通用技能挂载（支持通过口令显式调用） |
+| **WorkBuddy / Cursor** | [`tools/tool_definitions.json`](./tools/tool_definitions.json) | OpenAPI / Function Calling 标准工具声明或直接 `@save-my-disk` |
 | **Claude Code** | [`CLAUDE.md`](./CLAUDE.md) | 作为项目级指令规则即时调用 |
-| **WorkBuddy / Cursor** | [`tools/tool_definitions.json`](./tools/tool_definitions.json) | OpenAPI / Function Calling 标准工具声明 |
+| **OpenAI Codex** | [`AGENTS.md`](./AGENTS.md) | 自动读取指令与 CLI 注册表 |
 | **OpenCode** | [`SKILL.md`](./SKILL.md) / [`AGENTS.md`](./AGENTS.md) | 标准 Runbook 兼容模式 |
 | **DeepSeek Harness** | [`AGENTS.md`](./AGENTS.md) | 结构化任务与脚本执行支持 |
+
+---
+
+## 📖 如何使用 (How to Use)
+
+> **🚨 显式调用原则 (Explicit Invocation First)**：  
+> 磁盘运维属于系统高危敏感操作。为了确保您的开发环境与核心文件 100% 绝对安全，**本项目严禁 AI 在普通编程时隐式静默自发运行**。您必须显式唤起本技能，Agent 会严格遵守 **“只读体检 -> 呈批候选清单 -> 靶向确认 -> 执行自愈”** 闭环。
+
+### 方式一：在 AI 编程助手（Antigravity / WorkBuddy / Claude / Cursor 等）中使用
+
+#### 1. 显式唤醒与只读体检
+在对话框中直接输入显式调用口令：
+> **用户**：“使用 `save-my-disk` 技能，帮我只读扫描一下当前电脑的磁盘空间，看看有哪些大文件或安全残留”
+
+AI 会自动执行只读体检脚本，输出各驱动器容量分布，以及一份**带独立编号的候选审核清单**：
+```markdown
+| 编号 | 类别 | 名称 | 占用大小 | 路径 | 建议 |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **RES-001** | Steam 残留 | GhostGameResidual | 120 MB | `D:\STEAM\steamapps\common\GhostGame` | 游戏已卸载，仅存留崩溃日志，建议清理 |
+| **RES-002** | 软件空目录 | 鑻遍泟鑱旂洘 | 0 MB | `D:\WeGameApps\鑻遍泟鑱旂洘` | 乱码空目录，建议清理 |
+| **RES-003** | WPS 缓存 | WPS 自动备份暂存 | 450 MB | `%APPDATA%\Kingsoft\backup` | 历史临时快照，建议清理 |
+```
+
+#### 2. 靶向授权与定向清理
+**AI 绝不会自动删除全部项目**。您只需根据清单，回复您想清理的编号：
+> **用户**：“确认清理 RES-001 和 RES-002，其余保留”
+
+AI 收到您的明确指令后，才会调用底层精准清理脚本清除指定项，并汇报最终释放的容量与服务健康状态。
+
+---
+
+### 方式二：脱离 AI，人类开发者纯终端独立使用 (CLI Mode)
+
+即使不借助任何 AI 工具，所有脚本也可以在 Windows PowerShell 中直接独立运行：
+
+```powershell
+# 1. 进入脚本目录
+cd save-my-disk/scripts
+
+# 2. 运行只读体检（支持查看控制台表格或输出 JSON）
+.\audit_drives.ps1
+.\audit_drives.ps1 -Json
+
+# 3. 扫描软件卸载残留与应用安全缓存
+.\scan_app_residues.ps1
+
+# 4. 根据扫描出来的编号，定向安全清理（必须带 -Force 才会真正执行，否则仅 Dry-Run 预演）
+.\clean_selected_residues.ps1 -TargetIds RES-001,RES-002 -Force
+
+# 5. 安全清理 Windows Update 补丁缓存（需管理员权限，自动重启更新服务）
+.\clean_windows_update.ps1
+```
 
 ---
 

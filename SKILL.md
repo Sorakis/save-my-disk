@@ -1,23 +1,24 @@
 ---
 name: save-my-disk
 description: >-
-  Use this skill when the user asks to save disk space, inspect drive usage,
-  clean up disk space, optimize system storage, scan uninstalled software residues,
-  clean Steam leftover directories, or manage app caches (WPS, WeChat, QQ, Feishu).
-  Provides non-invasive read-only audits, itemized residue lists for user confirmation,
-  automated safe cache clearing, and guided human-in-the-loop workflows.
+  Sensitive high-stakes disk optimization runbook.
+  ONLY activate this skill when the user EXPLICITLY requests "save-my-disk",
+  specifically asks to invoke the "save-my-disk" skill, or issues a direct
+  command to audit/clean disk space.
+  NEVER trigger implicitly during unrelated coding or conversation turns.
 ---
 
 # Save My Disk (save-my-disk) Skill 🚀
 
-A universal, non-invasive runbook for AI Agents (Antigravity, WorkBuddy, Codex, Claude Code, Cursor, OpenCode, DeepSeek Harness, etc.) to audit, categorize, and safely clean disk storage on developer workstations.
+> **安全准则**：本技能属于敏感运维操作。**必须在用户显式呼叫时才启动**。任何阶段严禁暗中执行删除动作，所有清理步骤均须呈批候选清单并获得用户靶向授权。
 
 ## Core Rules for Any Agent
 
-1. **Read-Only First**: Never delete, move, or modify any file during the initial audit phase.
-2. **Itemize Before Clean**: When scanning app residues or caches (Steam remnants, WPS, WeChat, QQ), present an itemized list with IDs (e.g. `RES-001`) and paths to the user.
-3. **Explicit Confirmation**: Always ask for explicit user confirmation before executing any deletion command.
-4. **Post-Cleanup Health Verification**: Always verify volume capacity and critical service health after any deletion using [scripts/verify_health.ps1](./scripts/verify_health.ps1).
+1. **Explicit Call Only (显式触发)**: Do not trigger or suggest disk cleanup unless the user explicitly mentions `save-my-disk` or specifically requests a storage audit.
+2. **Read-Only First (只读体检)**: Never delete, move, or modify any file during the initial audit phase.
+3. **Itemize Before Clean (清单呈批)**: When scanning app residues or caches, present an itemized list with unique IDs (e.g. `RES-001`) and paths to the user.
+4. **Explicit Confirmation (靶向授权)**: Only execute deletion for targets explicitly confirmed by the user.
+5. **Post-Cleanup Verification (战果自愈)**: Always verify volume capacity and critical service health after any deletion using [scripts/verify_health.ps1](./scripts/verify_health.ps1).
 
 ---
 

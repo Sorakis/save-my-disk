@@ -4,10 +4,20 @@ This specification defines how **ANY AI Agent framework** (WorkBuddy, Cursor, Wi
 
 ---
 
+## 🚨 Explicit Invocation Policy (必须显式调用)
+
+> **CRITICAL SECURITY GUARDRAIL FOR ALL AGENTS**:
+> 磁盘运维属于系统高危敏感操作。
+> 1. **严禁隐式触发**：在用户进行普通写代码、日常问答时，AI 严禁擅自启动本技能或自作主张执行磁盘清理。
+> 2. **必须显式唤起**：只有当用户在提示词中明确提到 `save-my-disk`，或直接要求对磁盘进行体检与清理时，方可激活本规范。
+> 3. **清单呈批流**：任何删除命令前，必须先生成结构化候选清单（带 `RES-001` 等独立编号），获得用户明确授权确认后方可执行。
+
+---
+
 ## Agent Detection & Activation Triggers
-Activate this runbook whenever the user prompt mentions:
-* "磁盘清理", "C盘爆满", "清理垃圾", "扫描硬盘", "释放空间", "软件残留", "Steam残留", "微信缓存", "QQ缓存", "WPS缓存"
-* "clean disk", "disk full", "free up space", "inspect C drive", "steam remnants", "app caches"
+Only activate this runbook when user prompt explicitly matches:
+* "save-my-disk", "调用 save-my-disk", "运行 save-my-disk 技能"
+* "系统盘清理体检", "检查磁盘空间残留" (Explicit storage intent)
 
 ---
 
