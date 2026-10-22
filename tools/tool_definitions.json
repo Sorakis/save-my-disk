@@ -1,0 +1,98 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "DiskTriageCleanerToolSet",
+  "description": "Universal Tool & Function Calling definitions for AI Agents (WorkBuddy, Cursor, AutoGen, CrewAI, LangChain, etc.)",
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "audit_drives",
+        "description": "Performs non-invasive read-only scan of fixed disk volumes, system hotspots ($WINDOWS.~BT, SoftwareDistribution, Docker vhdx), and top AppData directories. Outputs structured JSON.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "json": {
+              "type": "boolean",
+              "description": "Return structured JSON output instead of console text.",
+              "default": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "scan_app_residues",
+        "description": "Scans for uninstalled Steam game leftover directories, empty/corrupt software directories, and safe-to-clean office/chat caches (WPS, WeChat, QQ, Feishu, DingTalk). Returns itemized list with unique IDs (e.g. RES-001).",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "json": {
+              "type": "boolean",
+              "description": "Return structured JSON list.",
+              "default": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "clean_selected_residues",
+        "description": "Safely cleans confirmed residue IDs or paths. Requires explicit user confirmation. Runs in dry-run mode unless force is true.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "target_ids": {
+              "type": "array",
+              "items": { "type": "string" },
+              "description": "List of residue IDs to clean (e.g. [\"RES-001\", \"RES-002\"])."
+            },
+            "force": {
+              "type": "boolean",
+              "description": "Must be set to true to execute actual deletion after user confirmation.",
+              "default": false
+            }
+          },
+          "required": ["target_ids"]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "clean_windows_update",
+        "description": "Safely purges Windows Update download cache and obsolete backups. Must be run with Administrator privileges after user confirmation.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "dry_run": {
+              "type": "boolean",
+              "description": "Simulate actions without deleting files.",
+              "default": false
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "verify_health",
+        "description": "Verifies post-cleanup volume free space and Windows Update service operational health.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "json": {
+              "type": "boolean",
+              "description": "Return structured JSON.",
+              "default": true
+            }
+          }
+        }
+      }
+    }
+  ]
+}
