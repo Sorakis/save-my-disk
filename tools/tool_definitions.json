@@ -220,11 +220,48 @@
     {
       "type": "function",
       "function": {
-        "name": "verify_health",
-        "description": "Verifies post-cleanup volume free space and Windows Update service operational health.",
+        "name": "export_dashboard",
+        "description": "Generates a zero-dependency, standalone HTML visual dashboard (.save-my-disk/disk_triage_report.html) summarizing disk space allocation, 4-tier risk categories, and cleaned vs pending items.",
         "parameters": {
           "type": "object",
           "properties": {
+            "manifest_path": {
+              "type": "string",
+              "description": "Path to cleanup_manifest.md.",
+              "default": ".save-my-disk/cleanup_manifest.md"
+            },
+            "output_path": {
+              "type": "string",
+              "description": "Path to write the standalone HTML report.",
+              "default": ".save-my-disk/disk_triage_report.html"
+            },
+            "open": {
+              "type": "boolean",
+              "description": "Whether to automatically open the report in the default browser.",
+              "default": false
+            },
+            "json": {
+              "type": "boolean",
+              "description": "Return structured JSON summary.",
+              "default": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "verify_health",
+        "description": "Verifies post-cleanup volume free space and Windows Update service operational health. Optionally regenerates visual HTML dashboard.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "export_html": {
+              "type": "boolean",
+              "description": "Whether to regenerate the visual HTML dashboard.",
+              "default": true
+            },
             "json": {
               "type": "boolean",
               "description": "Return structured JSON.",

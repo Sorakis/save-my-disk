@@ -5,8 +5,8 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![CI Sandbox](https://github.com/Sorakis/save-my-disk/actions/workflows/test.yml/badge.svg)](https://github.com/Sorakis/save-my-disk/actions)
-[![Release](https://img.shields.io/badge/Release-v0.5.2-orange.svg)](https://github.com/Sorakis/save-my-disk/releases)
-[![Platform](https://img.shields.io/badge/Platform-Windows%20(v0.5.2)%20%7C%20Linux%20%26%20macOS%20(Planned)-0078D6.svg)]()
+[![Release](https://img.shields.io/badge/Release-v0.5.3-orange.svg)](https://github.com/Sorakis/save-my-disk/releases)
+[![Platform](https://img.shields.io/badge/Platform-Windows%20(v0.5.3)%20%7C%20Linux%20%26%20macOS%20(Planned)-0078D6.svg)]()
 [![Compatibility](https://img.shields.io/badge/Agents-Antigravity%20%7C%20Codex%20%7C%20ClaudeCode%20%7C%20Cursor%20%7C%20WorkBuddy-brightgreen.svg)]()
 
 ---
@@ -187,7 +187,9 @@ save-my-disk/
 │   ├── scan_dev_artifacts.ps1 # 沉睡工程僵尸构建产物探测器 (node_modules/target/.vs)
 │   ├── manage_wsl_disk.ps1   # WSL2 & Docker 虚拟硬盘(.vhdx)分析与无损压缩
 │   ├── clean_selected_residues.ps1 # 基于 ID/Manifest 勾选项的精准清理器
-│   └── verify_health.ps1     # 空间差值与系统服务存活核验
+│   ├── export_dashboard.ps1  # 零依赖单文件 HTML 可视化战报生成器 (SVG/CSS)
+│   ├── menu_tui.ps1          # 纯 PowerShell 跨版本终端交互控制台 (TUI)
+│   └── verify_health.ps1     # 空间差值与系统服务存活核验 (支持 -ExportHtml)
 ├── tests/                    # 100% 隔离的自动化 Mock 沙箱测试套件
 │   └── test_mock_sandbox.ps1 # 零接触本机实际文件的验证测试
 └── references/               # 离线知识库
@@ -230,7 +232,10 @@ save-my-disk/
   * **账号密码与身份凭据红线防御**：无扩展名凭据与敏感文件哨兵 (`Login Data`, `Cookies`, `History`, `Bookmarks`, `places.sqlite`, `key4.db`) 100% 免疫，严禁嗅探与清理。
   * **GPU / DirectX 着色器缓存与 Crash Dumps 治理**：D3DSCache, NVIDIA DXCache/GLCache, AMD 着色器缓存，保留容器目录并智能容忍活跃锁定文件。
   * **100% 隔离沙箱覆盖**：沙箱全真多 Profile 模拟测试与红线对抗测试。
-- [ ] **v0.5.3**: 可视化战报与终端交互升级 (终端键盘交互式选单 + 清理前后 HTML 动态图表可视化报表)。
+- [x] **v0.5.3 (可视化战报与终端交互控制台升级)**:
+  * **零依赖独立 HTML 战报 (`export_dashboard.ps1`)**：纯单文件原生 HTML5 + 内联 CSS + SVG 动态环形占比图，无任何 Node/npm/CDN 外部依赖，离线/内网环境即开即显。
+  * **交互式终端控制台 (`menu_tui.ps1`)**：零依赖纯 PowerShell 交互式控制台，支持全流程体检、候选清单预览、带风险二阶段强确认安全清理。
+  * **自愈闭环联动刷新**：`verify_health.ps1 -ExportHtml` 支持清理完成后自动自愈验证并刷新可视化战报。
 - [ ] **v0.6.0**: macOS 原生跨平台拓展 (`~/Library/Caches`, Xcode DerivedData, Homebrew cache)。
 
 ---

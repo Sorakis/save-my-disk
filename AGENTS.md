@@ -1,4 +1,4 @@
-# Universal Multi-Agent Specification: Save My Disk (save-my-disk) 🚀 (v0.5.2)
+# Universal Multi-Agent Specification: Save My Disk (save-my-disk) 🚀 (v0.5.3)
 
 This specification defines how **ANY AI Agent framework** (WorkBuddy, Cursor, Windsurf, AutoGen, CrewAI, LangChain, OpenAI Codex, Claude Code, OpenCode, DeepSeek Harness, etc.) should discover, expose, and safely execute this toolset.
 
@@ -46,7 +46,9 @@ All scripts reside in `./scripts/` with zero external dependencies and support s
 | **Compact WSL2 / Docker Disk** | `powershell -ExecutionPolicy Bypass -File ./scripts/manage_wsl_disk.ps1 -Compact -Force` | Modifying | **NO** (Requires admin & user confirmation) |
 | **Clean Update Cache** | `powershell -ExecutionPolicy Bypass -File ./scripts/clean_windows_update.ps1` | Modifying | **NO** (Requires admin & user confirmation) |
 | **Clean User Temp** | `powershell -ExecutionPolicy Bypass -File ./scripts/clean_user_temp.ps1` | Modifying | **NO** (Must confirm with user first) |
-| **Post-Check Health** | `powershell -ExecutionPolicy Bypass -File ./scripts/verify_health.ps1 -Json` | Read-Only | **YES** |
+| **Export Visual Dashboard** | `powershell -ExecutionPolicy Bypass -File ./scripts/export_dashboard.ps1 -Json` | Read-Only | **YES** |
+| **Terminal Menu (TUI)** | `powershell -ExecutionPolicy Bypass -File ./scripts/menu_tui.ps1` | Interactive | **NO** (Human developer terminal control) |
+| **Post-Check Health** | `powershell -ExecutionPolicy Bypass -File ./scripts/verify_health.ps1 -ExportHtml -Json` | Read-Only | **YES** |
 
 ---
 
@@ -69,5 +71,5 @@ All scripts reside in `./scripts/` with zero external dependencies and support s
 3. **Step 3: Guarded Execution (受控执行)**
    Only pass the user-confirmed IDs to `clean_selected_residues.ps1 -TargetIds ... -Force` or run with `-FromManifest -Force`.
 
-4. **Step 4: Verify & Report (战果自愈)**
-   Run `verify_health.ps1 -Json` to confirm recovered space and ensure system services are healthy.
+4. **Step 4: Verify & Report (战果自愈与战报刷新)**
+   Run `verify_health.ps1 -ExportHtml -Json` to confirm recovered space, ensure system services are healthy, and auto-refresh the visual dashboard (`.save-my-disk/disk_triage_report.html`).

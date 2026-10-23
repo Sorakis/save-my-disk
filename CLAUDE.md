@@ -1,4 +1,4 @@
-# CLAUDE.md - Save My Disk (save-my-disk) Guidelines 🚀 (v0.5.2)
+# CLAUDE.md - Save My Disk (save-my-disk) Guidelines 🚀 (v0.5.3)
 
 This file configures Claude Code when working in this project or utilizing this skill.
 
@@ -28,4 +28,6 @@ This file configures Claude Code when working in this project or utilizing this 
 - **Compact WSL2 / Docker Disk (Requires Admin)**: `powershell -ExecutionPolicy Bypass -File ./scripts/manage_wsl_disk.ps1 -Compact -Force`
 - **Clean Update Cache (Requires Admin & User Consent)**: `powershell -ExecutionPolicy Bypass -File ./scripts/clean_windows_update.ps1`
 - **Clean Temp Files**: `powershell -ExecutionPolicy Bypass -File ./scripts/clean_user_temp.ps1`
-- **Verify Status**: `powershell -ExecutionPolicy Bypass -File ./scripts/verify_health.ps1`
+- **Export Visual Dashboard**: `powershell -ExecutionPolicy Bypass -File ./scripts/export_dashboard.ps1 -Json`
+- **Terminal Interactive Menu (TUI)**: `powershell -ExecutionPolicy Bypass -File ./scripts/menu_tui.ps1`
+- **Verify Status & Refresh Dashboard**: `powershell -ExecutionPolicy Bypass -File ./scripts/verify_health.ps1 -ExportHtml`

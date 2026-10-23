@@ -8,7 +8,7 @@ description: >-
   NEVER trigger implicitly during unrelated coding or conversation turns.
 ---
 
-# Save My Disk (save-my-disk) Skill 🚀 (v0.5.2)
+# Save My Disk (save-my-disk) Skill 🚀 (v0.5.3)
 
 > **安全准则**：本技能属于系统级敏感运维操作。**必须在用户显式呼叫时才启动**。任何阶段严禁暗中执行删除动作，所有清理步骤均须呈批候选清单并获得用户靶向授权。
 
@@ -69,7 +69,8 @@ description: >-
 Agent 必须在对话中向用户输出：
 1. **直接在聊天框呈现 4-Tier 候选表格**（Tier 1 零风险系统项与包缓存、Tier 2 开发者权衡项与AI大模型、Tier 3 软件残留、Tier 4 保护红线）。
 2. **给出本地清单文件的可点击链接**：`[.save-my-disk/cleanup_manifest.md](file:///绝对路径/.save-my-disk/cleanup_manifest.md)`。
-3. **提示用户两种确认清理的方式**（对话框回复编号 / 清单打勾保存）。
+3. **可选择提供单文件 HTML 可视化战报链接**（经由 `export_dashboard.ps1` 生成的 `[.save-my-disk/disk_triage_report.html](file:///绝对路径/.save-my-disk/disk_triage_report.html)`）。
+4. **提示用户两种确认清理的方式**（对话框回复编号 / 清单打勾保存）。
 
 ### Phase 3: Controlled Execution (受控靶向执行)
 1. **Targeted Residues / Dev Artifacts / Package Caches / AI Models / System Caches**:
@@ -88,7 +89,7 @@ Agent 必须在对话中向用户输出：
    powershell -ExecutionPolicy Bypass -File ./scripts/clean_windows_update.ps1
    ```
 
-### Phase 4: Post-Cleanup Verification (战果自愈核验)
+### Phase 4: Post-Cleanup Verification & Visual Dashboard (战果自愈与战报刷新)
 ```powershell
-powershell -ExecutionPolicy Bypass -File ./scripts/verify_health.ps1
+powershell -ExecutionPolicy Bypass -File ./scripts/verify_health.ps1 -ExportHtml
 ```

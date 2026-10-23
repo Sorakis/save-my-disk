@@ -20,7 +20,7 @@ $testRunId = [guid]::NewGuid().ToString().Substring(0, 8)
 $sandbox = Join-Path $env:TEMP "disk_cleaner_test_$testRunId"
 
 Write-Host "======================================================" -ForegroundColor Cyan
-Write-Host " STARTING ISOLATED MOCK SANDBOX TEST SUITE (v0.5.2)" -ForegroundColor Cyan
+Write-Host " STARTING ISOLATED MOCK SANDBOX TEST SUITE (v0.5.3)" -ForegroundColor Cyan
 Write-Host " Sandbox Location: $sandbox" -ForegroundColor Gray
 Write-Host "======================================================" -ForegroundColor Cyan
 
@@ -201,6 +201,8 @@ try {
     $manageWslScript = Join-Path $scriptsDir "manage_wsl_disk.ps1"
     $cleanScript = Join-Path $scriptsDir "clean_selected_residues.ps1"
     $verifyScript = Join-Path $scriptsDir "verify_health.ps1"
+    $exportDashScript = Join-Path $scriptsDir "export_dashboard.ps1"
+    $menuTuiScript = Join-Path $scriptsDir "menu_tui.ps1"
     $mockManifest = Join-Path $sandbox ".save-my-disk\cleanup_manifest.md"
 
     # TEST 1: Audit drives with mock root (Absent item check)
@@ -414,17 +416,53 @@ try {
         throw "FAIL: Manifest file was not updated after deletion."
     }
 
-    # TEST 10: Post-cleanup health verification
-    Write-Host "`n[TEST 10] Running verify_health check..." -ForegroundColor Cyan
-    $healthJson = & $verifyScript -Json | ConvertFrom-Json
-    if ($healthJson.Volumes.Count -ge 1) {
+    # TEST 10: Post-cleanup health verification with HTML export
+    Write-Host "`n[TEST 10] Running verify_health check with MockRoot & ExportHtml..." -ForegroundColor Cyan
+    $healthJson = & $verifyScript -MockRoot $sandbox -ManifestPath $mockManifest -ExportHtml -Json | ConvertFrom-Json
+    if ($healthJson.Volumes.Count -ge 1 -and $healthJson.Services.wuauserv -eq "Running") {
         Write-Host "  -> PASS: verify_health successfully reported volume and critical service health." -ForegroundColor Green
     } else {
         throw "FAIL: verify_health failed to report status."
     }
 
+    # TEST 11: Standalone HTML Visual Dashboard generation
+    Write-Host "`n[TEST 11] Running export_dashboard..." -ForegroundColor Cyan
+    $mockReportPath = Join-Path $sandbox ".save-my-disk\disk_triage_report.html"
+    $dashJson = & $exportDashScript -MockRoot $sandbox -ManifestPath $mockManifest -OutputPath $mockReportPath -Json | ConvertFrom-Json
+    if ((Test-Path -LiteralPath $mockReportPath) -and (Get-Item $mockReportPath).Length -gt 2000) {
+        Write-Host "  -> PASS: Standalone HTML report generated successfully (Size: $((Get-Item $mockReportPath).Length) bytes)." -ForegroundColor Green
+    } else {
+        throw "FAIL: HTML report was not created or empty!"
+    }
+    if ($dashJson.TotalCandidates -lt 5 -or ($dashJson.TotalPendingGB + $dashJson.TotalCleanedGB) -le 0) {
+        throw "FAIL: HTML dashboard parsed zero candidates or zero space! Candidates=$($dashJson.TotalCandidates), Cleaned=$($dashJson.TotalCleanedGB), Pending=$($dashJson.TotalPendingGB)"
+    } else {
+        Write-Host "  -> PASS: HTML dashboard accurately extracted $($dashJson.TotalCandidates) candidates (Cleaned: $($dashJson.TotalCleanedGB) GB, Pending: $($dashJson.TotalPendingGB) GB)." -ForegroundColor Green
+    }
+    $reportHtml = Get-Content -LiteralPath $mockReportPath -Raw -Encoding UTF8
+    if ($reportHtml -match "<svg" -and $reportHtml -match "Tier 1" -and $reportHtml -match "v0.5.3") {
+        Write-Host "  -> PASS: HTML report contains embedded SVG charts, Tier breakdowns, and v0.5.3 branding." -ForegroundColor Green
+    } else {
+        throw "FAIL: HTML report missing SVG or Tier content."
+    }
+
+    # TEST 12: Terminal Menu Non-Interactive Mode
+    Write-Host "`n[TEST 12] Testing menu_tui in non-interactive & test mode..." -ForegroundColor Cyan
+    $menuOutput = & $menuTuiScript -MockRoot $sandbox -TestMenu *>&1 | Out-String
+    if ($menuOutput -match "SAVE-MY-DISK \(v0.5.3\)" -and $menuOutput -match "TEST MODE") {
+        Write-Host "  -> PASS: Interactive menu initialized and cleanly exited in test mode without hanging." -ForegroundColor Green
+    } else {
+        throw "FAIL: Menu failed in test mode: $menuOutput"
+    }
+    $nonInterOutput = & $menuTuiScript -MockRoot $sandbox -NonInteractive *>&1 | Out-String
+    if ($nonInterOutput -match "NON-INTERACTIVE") {
+        Write-Host "  -> PASS: Menu correctly detected -NonInteractive mode and exited cleanly without hanging." -ForegroundColor Green
+    } else {
+        throw "FAIL: Menu failed in -NonInteractive mode: $nonInterOutput"
+    }
+
     Write-Host "`n======================================================" -ForegroundColor Green
-    Write-Host " ALL v0.5.2 TESTS PASSED! 100% ISOLATED & SAFE." -ForegroundColor Green
+    Write-Host " ALL v0.5.3 TESTS PASSED! 100% ISOLATED & SAFE." -ForegroundColor Green
     Write-Host "======================================================" -ForegroundColor Cyan
 
 } finally {
