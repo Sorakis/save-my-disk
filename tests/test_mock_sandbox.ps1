@@ -20,7 +20,7 @@ $testRunId = [guid]::NewGuid().ToString().Substring(0, 8)
 $sandbox = Join-Path $env:TEMP "disk_cleaner_test_$testRunId"
 
 Write-Host "======================================================" -ForegroundColor Cyan
-Write-Host " STARTING ISOLATED MOCK SANDBOX TEST SUITE (v0.5.1)" -ForegroundColor Cyan
+Write-Host " STARTING ISOLATED MOCK SANDBOX TEST SUITE (v0.5.2)" -ForegroundColor Cyan
 Write-Host " Sandbox Location: $sandbox" -ForegroundColor Gray
 Write-Host "======================================================" -ForegroundColor Cyan
 
@@ -152,7 +152,40 @@ try {
     New-Item -ItemType Directory -Path "$sandbox\AppData\Roaming\DingTalk\logs" -Force | Out-Null
     Set-Content -Path "$sandbox\AppData\Roaming\DingTalk\logs\ding_error.log" -Value ("G" * 2 * 1024 * 1024)
 
-    Write-Host "[SETUP] All mock sandbox fixtures (4-Tier v0.5.1 fixtures) created." -ForegroundColor Green
+    # 1.11 Mock Browser & GPU Shader Caches (v0.5.2 fixtures)
+    # Google Chrome (Default profile)
+    $mockChrome = "$sandbox\AppData\Local\Google\Chrome\User Data\Default"
+    New-Item -ItemType Directory -Path "$mockChrome\Code Cache\js" -Force | Out-Null
+    Set-Content -Path "$mockChrome\Code Cache\js\v8_compiled_chunk.bin" -Value ("C" * 5 * 1024 * 1024)
+    New-Item -ItemType Directory -Path "$mockChrome\GPUCache" -Force | Out-Null
+    Set-Content -Path "$mockChrome\GPUCache\data_0" -Value ("G" * 3 * 1024 * 1024)
+    # Chrome CRITICAL CREDENTIALS (Must be 100% immune!)
+    Set-Content -Path "$mockChrome\Login Data" -Value ("P" * 10 * 1024 * 1024)
+    New-Item -ItemType Directory -Path "$mockChrome\Network" -Force | Out-Null
+    Set-Content -Path "$mockChrome\Network\Cookies" -Value ("K" * 2 * 1024 * 1024)
+
+    # Microsoft Edge (Profile 1)
+    $mockEdge = "$sandbox\AppData\Local\Microsoft\Edge\User Data\Profile 1"
+    New-Item -ItemType Directory -Path "$mockEdge\Code Cache\js" -Force | Out-Null
+    Set-Content -Path "$mockEdge\Code Cache\js\edge_chunk.bin" -Value ("E" * 4 * 1024 * 1024)
+    Set-Content -Path "$mockEdge\Cookies" -Value ("K" * 2 * 1024 * 1024)
+
+    # Mozilla Firefox
+    $mockFirefox = "$sandbox\AppData\Local\Mozilla\Firefox\Profiles\xyz.default-release"
+    New-Item -ItemType Directory -Path "$mockFirefox\cache2\entries" -Force | Out-Null
+    Set-Content -Path "$mockFirefox\cache2\entries\ff_cache_entry.bin" -Value ("M" * 4 * 1024 * 1024)
+
+    # NVIDIA DXCache
+    $mockDxCache = "$sandbox\AppData\Local\NVIDIA\DXCache"
+    New-Item -ItemType Directory -Path $mockDxCache -Force | Out-Null
+    Set-Content -Path "$mockDxCache\shader_hash.bin" -Value ("N" * 6 * 1024 * 1024)
+
+    # Windows CrashDumps
+    $mockCrashDumps = "$sandbox\AppData\Local\CrashDumps"
+    New-Item -ItemType Directory -Path $mockCrashDumps -Force | Out-Null
+    Set-Content -Path "$mockCrashDumps\app_crash.dmp" -Value ("D" * 5 * 1024 * 1024)
+
+    Write-Host "[SETUP] All mock sandbox fixtures (4-Tier v0.5.2 fixtures) created." -ForegroundColor Green
 
     # ----------------------------------------------------
     # 2. Test Execution
@@ -164,6 +197,7 @@ try {
     $scanAiScript = Join-Path $scriptsDir "scan_ai_models.ps1"
     $scanDevScript = Join-Path $scriptsDir "scan_dev_artifacts.ps1"
     $scanImScript = Join-Path $scriptsDir "scan_im_office_residues.ps1"
+    $scanBrwScript = Join-Path $scriptsDir "scan_browser_system_caches.ps1"
     $manageWslScript = Join-Path $scriptsDir "manage_wsl_disk.ps1"
     $cleanScript = Join-Path $scriptsDir "clean_selected_residues.ps1"
     $verifyScript = Join-Path $scriptsDir "verify_health.ps1"
@@ -238,6 +272,22 @@ try {
         Write-Host "  -> PASS: CRITICAL CHECK: Chat history databases were 100% EXCLUDED from scan candidates!" -ForegroundColor Green
     }
 
+    # TEST 5.6: Browser & GPU Shader Caches Scan (v0.5.2)
+    Write-Host "`n[TEST 5.6] Running scan_browser_system_caches (Chrome, Edge, DXCache, CrashDumps)..." -ForegroundColor Cyan
+    $brwJson = @((& $scanBrwScript -MockRoot $sandbox -OutputManifest $mockManifest -Json | ConvertFrom-Json) | ForEach-Object { $_ })
+    if ($brwJson.Count -ge 4) {
+        Write-Host "  -> PASS: Correctly detected $($brwJson.Count) browser/shader cache targets." -ForegroundColor Green
+    } else {
+        throw "FAIL: Expected at least 4 browser/shader cache items, found $($brwJson.Count)"
+    }
+    # Verify NO credentials or cookies were ever listed as candidates!
+    $leakedCred = $brwJson | Where-Object { $_.Path -match "Login Data|Cookies|History|Bookmarks" }
+    if ($leakedCred) {
+        throw "CRITICAL SECURITY FAIL: Browser credentials were leaked into candidate list! $($leakedCred.Path)"
+    } else {
+        Write-Host "  -> PASS: CRITICAL CHECK: Browser passwords, cookies, and history 100% EXCLUDED from scan candidates!" -ForegroundColor Green
+    }
+
     # TEST 6: Verify all Tier headers and anchors in Manifest
     $mTextUpdated = Get-Content -LiteralPath $mockManifest -Raw -Encoding UTF8
     if (($mTextUpdated -match "Tier 1") -and ($mTextUpdated -match "Tier 2") -and ($mTextUpdated -match "Tier 3") -and ($mTextUpdated -match "Tier 4")) {
@@ -245,8 +295,8 @@ try {
     } else {
         throw "FAIL: cleanup_manifest.md missing one or more Tier section headers."
     }
-    if ($mTextUpdated -match "AI-001" -and $mTextUpdated -match "PKG-001" -and $mTextUpdated -match "DEV-001" -and $mTextUpdated -match "IM-001") {
-        Write-Host "  -> PASS: All AI-xxx, PKG-xxx, DEV-xxx, and IM-xxx candidates successfully anchored into Manifest." -ForegroundColor Green
+    if ($mTextUpdated -match "AI-001" -and $mTextUpdated -match "PKG-001" -and $mTextUpdated -match "DEV-001" -and $mTextUpdated -match "IM-001" -and $mTextUpdated -match "BRW-001") {
+        Write-Host "  -> PASS: All AI-xxx, PKG-xxx, DEV-xxx, IM-xxx, and BRW-xxx candidates successfully anchored into Manifest." -ForegroundColor Green
     } else {
         throw "FAIL: One or more candidate groups missing from Manifest."
     }
@@ -260,14 +310,15 @@ try {
         throw "FAIL: VHDX detection failed."
     }
 
-    # TEST 8: Manifest-driven deletion across SYS, RES, DEV, AI, PKG, IM items
-    Write-Host "`n[TEST 8] Testing manifest-driven deletion across SYS, DEV, AI, PKG, IM items..." -ForegroundColor Cyan
-    # Mark DEV-001, AI-001, PKG-001, PKG-003, and IM-001 as checked
+    # TEST 8: Manifest-driven deletion across SYS, RES, DEV, AI, PKG, IM, BRW items
+    Write-Host "`n[TEST 8] Testing manifest-driven deletion across SYS, DEV, AI, PKG, IM, BRW items..." -ForegroundColor Cyan
+    # Mark DEV-001, AI-001, PKG-001, PKG-003, IM-001, and BRW-001 as checked
     $mTextUpdated = [regex]::Replace($mTextUpdated, "-\s*\[\s*\]\s*\*\*\[DEV-001\]", "- [x] **[DEV-001]")
     $mTextUpdated = [regex]::Replace($mTextUpdated, "-\s*\[\s*\]\s*\*\*\[AI-001\]", "- [x] **[AI-001]")
     $mTextUpdated = [regex]::Replace($mTextUpdated, "-\s*\[\s*\]\s*\*\*\[PKG-001\]", "- [x] **[PKG-001]")
     $mTextUpdated = [regex]::Replace($mTextUpdated, "-\s*\[\s*\]\s*\*\*\[PKG-003\]", "- [x] **[PKG-003]")
     $mTextUpdated = [regex]::Replace($mTextUpdated, "-\s*\[\s*\]\s*\*\*\[IM-001\]", "- [x] **[IM-001]")
+    $mTextUpdated = [regex]::Replace($mTextUpdated, "-\s*\[\s*\]\s*\*\*\[BRW-001\]", "- [x] **[BRW-001]")
     [System.IO.File]::WriteAllText($mockManifest, $mTextUpdated, (New-Object System.Text.UTF8Encoding($true)))
 
     # Execute cleaner with -FromManifest -Force
@@ -306,19 +357,39 @@ try {
         throw "FAIL: WeChat video cache was not deleted."
     }
 
-    # TEST 8.1: CRITICAL ADVERSARIAL TEST: Attempt direct deletion on chat database folder
-    Write-Host "`n[TEST 8.1] Running ADVERSARIAL TEST: Attempting direct deletion on chat database folders..." -ForegroundColor Cyan
+    # Verify Chrome Code Cache files deleted, container directory preserved, credentials intact
+    if (-not (Test-Path "$mockChrome\Code Cache\js\v8_compiled_chunk.bin")) {
+        Write-Host "  -> PASS: Chrome Code Cache (BRW-001) contents cleanly purged." -ForegroundColor Green
+    } else {
+        throw "FAIL: Chrome Code Cache was not deleted."
+    }
+    if (Test-Path "$mockChrome\Code Cache") {
+        Write-Host "  -> PASS: Chrome Code Cache container directory 100% PRESERVED!" -ForegroundColor Green
+    } else {
+        throw "FAIL: Chrome Code Cache container directory was deleted!"
+    }
+    if ((Test-Path "$mockChrome\Login Data") -and (Test-Path "$mockChrome\Network\Cookies")) {
+        Write-Host "  -> PASS: CRITICAL CHECK: Chrome Login Data and Cookies 100% PRESERVED!" -ForegroundColor Green
+    } else {
+        throw "FAIL: Chrome Login Data or Cookies was damaged!"
+    }
+
+    # TEST 8.1: CRITICAL ADVERSARIAL TEST: Attempt direct deletion on chat databases & browser credentials
+    Write-Host "`n[TEST 8.1] Running ADVERSARIAL TEST: Attempting direct deletion on chat databases & browser credentials..." -ForegroundColor Cyan
     $attackOutput1 = & $cleanScript -MockRoot $sandbox -TargetPaths "$mockWx3\Msg\Multi" -Force 2>&1 | Out-String
     $attackOutput2 = & $cleanScript -MockRoot $sandbox -TargetPaths "$mockWx4\db_storage\message" -Force 2>&1 | Out-String
-    if ($attackOutput1 -match "SECURITY BLOCKED" -and $attackOutput2 -match "SECURITY BLOCKED") {
-        Write-Host "  -> PASS: ADVERSARIAL TEST: Cleaner strictly BLOCKED attempts to delete WeChat 3.x and 4.0 database folders!" -ForegroundColor Green
+    $attackOutput3 = & $cleanScript -MockRoot $sandbox -TargetPaths "$mockChrome\Login Data" -Force 2>&1 | Out-String
+    $attackOutput4 = & $cleanScript -MockRoot $sandbox -TargetPaths "$mockChrome" -Force 2>&1 | Out-String
+    $attackOutput5 = & $cleanScript -MockRoot $sandbox -TargetPaths "$mockFirefox" -Force 2>&1 | Out-String
+    if ($attackOutput1 -match "SECURITY BLOCKED" -and $attackOutput2 -match "SECURITY BLOCKED" -and $attackOutput3 -match "SECURITY BLOCKED" -and $attackOutput4 -match "SECURITY BLOCKED" -and $attackOutput5 -match "SECURITY BLOCKED") {
+        Write-Host "  -> PASS: ADVERSARIAL TEST: Cleaner strictly BLOCKED attempts to delete WeChat databases, Chrome credentials, and Profile roots!" -ForegroundColor Green
     } else {
-        throw "FAIL: ADVERSARIAL TEST FAILED: Cleaner did not block database deletion!"
+        throw "FAIL: ADVERSARIAL TEST FAILED: Cleaner did not block credential or database deletion!"
     }
-    if ((Test-Path "$mockWx3\Msg\Multi\MSG0.db") -and (Test-Path "$mockWx4\db_storage\message\message_0.db") -and (Test-Path "$mockWx4\db_storage\message\message_0.db-wal")) {
-        Write-Host "  -> PASS: CRITICAL CHECK: All chat history databases are 100% UNTOUCHED and PRESERVED!" -ForegroundColor Green
+    if ((Test-Path "$mockWx3\Msg\Multi\MSG0.db") -and (Test-Path "$mockWx4\db_storage\message\message_0.db") -and (Test-Path "$mockChrome\Login Data")) {
+        Write-Host "  -> PASS: CRITICAL CHECK: All chat history databases and browser credentials are 100% UNTOUCHED and PRESERVED!" -ForegroundColor Green
     } else {
-        throw "FAIL: Chat database was destroyed during adversarial test!"
+        throw "FAIL: Database or credential was destroyed during adversarial test!"
     }
 
     # CRITICAL CHECK: Source code must be 100% intact!
@@ -353,7 +424,7 @@ try {
     }
 
     Write-Host "`n======================================================" -ForegroundColor Green
-    Write-Host " ALL v0.5.1 TESTS PASSED! 100% ISOLATED & SAFE." -ForegroundColor Green
+    Write-Host " ALL v0.5.2 TESTS PASSED! 100% ISOLATED & SAFE." -ForegroundColor Green
     Write-Host "======================================================" -ForegroundColor Cyan
 
 } finally {

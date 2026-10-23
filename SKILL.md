@@ -8,7 +8,7 @@ description: >-
   NEVER trigger implicitly during unrelated coding or conversation turns.
 ---
 
-# Save My Disk (save-my-disk) Skill 🚀 (v0.5.1)
+# Save My Disk (save-my-disk) Skill 🚀 (v0.5.2)
 
 > **安全准则**：本技能属于系统级敏感运维操作。**必须在用户显式呼叫时才启动**。任何阶段严禁暗中执行删除动作，所有清理步骤均须呈批候选清单并获得用户靶向授权。
 
@@ -16,8 +16,8 @@ description: >-
 
 1. **Explicit Call Only (显式触发)**: Do not trigger or suggest disk cleanup unless the user explicitly mentions `save-my-disk` or specifically requests a storage audit.
 2. **Read-Only First (只读体检)**: Never delete, move, or modify any file during the initial audit phase.
-3. **Itemize Before Clean (清单呈批)**: Present an itemized list with unique IDs (`SYS-xxx`, `RES-xxx`, `DEV-xxx`, `PKG-xxx`, `AI-xxx`, `IM-xxx`) in `.save-my-disk/cleanup_manifest.md`.
-4. **Preserve Source Code & Chat Databases (绝不误伤源码与聊天数据库)**: When cleaning inactive dev artifacts or IM caches, NEVER delete project root, source files, or any chat history databases (`*.db`, `*.kvdb`, `Msg`, `db_storage`).
+3. **Itemize Before Clean (清单呈批)**: Present an itemized list with unique IDs (`SYS-xxx`, `RES-xxx`, `DEV-xxx`, `PKG-xxx`, `AI-xxx`, `IM-xxx`, `BRW-xxx`) in `.save-my-disk/cleanup_manifest.md`.
+4. **Preserve Source Code, Chat Databases & Browser Credentials (绝不误伤源码、聊天数据库与浏览器凭证)**: When cleaning inactive dev artifacts, IM caches, or browser/system caches, NEVER delete project root, source files, chat history databases (`*.db`, `*.kvdb`, `Msg`, `db_storage`), or browser credentials/user profiles (`Login Data`, `Cookies`, `History`, `Bookmarks`, `places.sqlite`, `key4.db`).
 5. **Dual-Channel Reporting (双轨直呈与透明建档 - 必须严格执行)**:
    * **通道一 (对话框直报)**：体检完成后，Agent **必须**在对话框气泡中直接打印完整的 **4 级风险梯度 (4-Tier) Markdown 表格**，包括已清理项的状态（如 `$WINDOWS.~BT` 汇报 0 MB 健康状态，解答用户关于 cleanmgr 的疑问），让用户无需打开文件即可一览无余。
    * **通道二 (可点击清单)**：Agent **必须**在回复中提供本地清单文件的绝对路径可点击链接（`[.save-my-disk/cleanup_manifest.md](file:///绝对路径/.save-my-disk/cleanup_manifest.md)`），明确告知用户该文件是人机同步的单一真实事实来源（SSOT）。
@@ -40,23 +40,27 @@ description: >-
    ```powershell
    powershell -ExecutionPolicy Bypass -File ./scripts/scan_app_residues.ps1 -OutputManifest ./.save-my-disk/cleanup_manifest.md -Json
    ```
-3. Global Package Manager Caches Scan (pip, npm, Conda, Gradle):
+3. Browser & GPU Shader Caches Scan (Chrome, Edge, Brave, Firefox, DirectX/NVIDIA Shader Caches):
+   ```powershell
+   powershell -ExecutionPolicy Bypass -File ./scripts/scan_browser_system_caches.ps1 -OutputManifest ./.save-my-disk/cleanup_manifest.md -Json
+   ```
+4. Global Package Manager Caches Scan (pip, npm, Conda, Gradle):
    ```powershell
    powershell -ExecutionPolicy Bypass -File ./scripts/scan_package_caches.ps1 -OutputManifest ./.save-my-disk/cleanup_manifest.md -Json
    ```
-4. AI/ML Model Storage Scan (Hugging Face, Ollama, PyTorch checkpoints):
+5. AI/ML Model Storage Scan (Hugging Face, Ollama, PyTorch checkpoints):
    ```powershell
    powershell -ExecutionPolicy Bypass -File ./scripts/scan_ai_models.ps1 -OutputManifest ./.save-my-disk/cleanup_manifest.md -Json
    ```
-5. Domestic IM & Office Caches Scan (WeChat 3.x/4.0, WXWork, QQ, Feishu, DingTalk):
+6. Domestic IM & Office Caches Scan (WeChat 3.x/4.0, WXWork, QQ, Feishu, DingTalk):
    ```powershell
    powershell -ExecutionPolicy Bypass -File ./scripts/scan_im_office_residues.ps1 -OutputManifest ./.save-my-disk/cleanup_manifest.md -Json
    ```
-6. Inactive Developer Build Artifacts Scan (> 60 days inactive, auto-inserts into Tier 2):
+7. Inactive Developer Build Artifacts Scan (> 60 days inactive, auto-inserts into Tier 2):
    ```powershell
    powershell -ExecutionPolicy Bypass -File ./scripts/scan_dev_artifacts.ps1 -DaysInactive 60 -OutputManifest ./.save-my-disk/cleanup_manifest.md -Json
    ```
-7. WSL2 & Docker VHDX Analysis:
+8. WSL2 & Docker VHDX Analysis:
    ```powershell
    powershell -ExecutionPolicy Bypass -File ./scripts/manage_wsl_disk.ps1 -Json
    ```

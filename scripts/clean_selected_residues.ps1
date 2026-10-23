@@ -47,7 +47,7 @@ $targetsToDelete = @()
 # 1. Resolve selected items from manifest if -FromManifest is specified
 if ($FromManifest -and (Test-Path -LiteralPath $ManifestPath)) {
     $manifestContent = Get-Content -LiteralPath $ManifestPath -Raw -Encoding UTF8
-    $pattern = '-\s*\[[xX]\]\s*\*\*\[((?:SYS|RES|DEV|AI|PKG|IM)-\d+)\]\s*(.+?)\*\*.*?\r?\n\s*\*\s*路径[：:]\s*`([^`]+)`'
+    $pattern = '-\s*\[[xX]\]\s*\*\*\[((?:SYS|RES|DEV|AI|PKG|IM|BRW)-\d+)\]\s*(.+?)\*\*.*?\r?\n\s*\*\s*路径[：:]\s*`([^`]+)`'
     $itemMatches = [regex]::Matches($manifestContent, $pattern, [System.Text.RegularExpressions.RegexOptions]::Singleline)
 
     foreach ($m in $itemMatches) {
@@ -134,6 +134,20 @@ if ($TargetIds -and $targetsToDelete.Count -eq 0) {
             }
         }
     }
+
+    # 2.6 Check scan_browser_system_caches
+    if (Test-Path -LiteralPath "$PSScriptRoot\scan_browser_system_caches.ps1") {
+        $scanBrw = if ($MockRoot) {
+            & "$PSScriptRoot\scan_browser_system_caches.ps1" -MockRoot $MockRoot -Json | ConvertFrom-Json | ForEach-Object { $_ }
+        } else {
+            & "$PSScriptRoot\scan_browser_system_caches.ps1" -Json | ConvertFrom-Json | ForEach-Object { $_ }
+        }
+        foreach ($item in $scanBrw) {
+            if ($TargetIds -contains $item.ID -and $item.SizeMB -gt 0) {
+                $targetsToDelete += $item
+            }
+        }
+    }
 }
 
 # 3. Handle manual direct paths
@@ -173,7 +187,13 @@ $forbiddenPatterns = @(
     "\\(All Users|all_users)($|\\)",
     "\\Backup($|\\)",
     "\\Msg($|\\)",
-    "\\Msg3?\.0?\.db"
+    "\\Msg3?\.0?\.db",
+    "\\User Data\\?$",
+    "\\User Data\\(Default|Profile \d+)\\?$",
+    "\\Mozilla\\Firefox\\Profiles\\?$",
+    "\\Mozilla\\Firefox\\Profiles\\[^\\]+\\?$",
+    "\\(Login Data|Cookies|Web Data|History|Bookmarks|IndexedDB|Local Storage|Extensions)($|\\|-|\.)",
+    "\\Network\\Cookies"
 )
 
 $deletedCount = 0
@@ -221,15 +241,16 @@ foreach ($t in $targetsToDelete) {
         continue
     }
 
-    # Check 4.3: Rigid Chat Database Sentinel (熔断哨兵) - Never delete any directory containing chat database files!
-    $hasDbFile = Get-ChildItem -LiteralPath $p -Recurse -File -Force -ErrorAction SilentlyContinue |
+    # Check 4.3: Rigid Chat Database & Browser Credential Sentinel (熔断哨兵) - Never delete database files, credentials, or cookies!
+    $hasDbOrCredFile = Get-ChildItem -LiteralPath $p -Recurse -File -Force -ErrorAction SilentlyContinue |
         Where-Object {
             $_.Extension -match '^\.(db|sqlite|sqlite3|kvdb|mmkv)$' -or
             $_.Name -match '\.(db|sqlite|sqlite3|kvdb|mmkv)-(wal|shm|journal)$' -or
-            $_.Name -like '*.material'
+            $_.Name -like '*.material' -or
+            $_.Name -match '^(Login Data|Cookies|Web Data|History|Bookmarks|places\.sqlite|key4\.db|logins\.json)'
         }
-    if ($hasDbFile) {
-        Write-Error "SECURITY BLOCKED: Target directory contains chat history database or journal files! Aborting deletion: $p"
+    if ($hasDbOrCredFile) {
+        Write-Error "SECURITY BLOCKED: Target directory contains chat history database, browser credentials, or cookies! Aborting deletion: $p"
         continue
     }
 
@@ -302,6 +323,17 @@ foreach ($t in $targetsToDelete) {
             }
             $freedBytes += $sz
             $deletedCount += $oldFiles.Count
+        } elseif ($t.ID -like "BRW-*" -or $t.Category -like "*Browser*" -or $t.Category -like "*Shader*" -or $t.Category -like "*Crash*" -or $p -like "*Code Cache*" -or $p -like "*GPUCache*" -or $p -like "*DXCache*" -or $p -like "*D3DSCache*" -or $p -like "*CrashDumps*" -or $p -like "*cache2*" -or $p -like "*DawnCache*" -or $p -like "*startupCache*") {
+            # Browser caches, GPU shader caches, and crash dumps: purge container contents with graceful lock skipping
+            Write-Host "Purging browser / shader cache files in $p (preserving container)..." -ForegroundColor Cyan
+            $items = Get-ChildItem -LiteralPath $p -Recurse -File -Force -ErrorAction SilentlyContinue
+            $sz = ($items | Measure-Object -Property Length -Sum).Sum
+            if ($null -eq $sz) { $sz = 0 }
+            Get-ChildItem -LiteralPath $p -Force -ErrorAction SilentlyContinue | ForEach-Object {
+                Remove-Item -LiteralPath $_.FullName -Recurse -Force -ErrorAction SilentlyContinue
+            }
+            $freedBytes += $sz
+            $deletedCount += $items.Count
         } else {
             # Standard directory or file target
             $items = Get-ChildItem -LiteralPath $p -Recurse -File -Force -ErrorAction SilentlyContinue

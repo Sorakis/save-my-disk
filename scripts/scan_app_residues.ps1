@@ -322,6 +322,8 @@ foreach ($item in $tier1Items) {
 [void]$sb.AppendLine('')
 [void]$sb.AppendLine('<!-- TIER1_IM_OFFICE_PLACEHOLDER -->')
 [void]$sb.AppendLine('')
+[void]$sb.AppendLine('<!-- TIER1_BROWSER_SYSTEM_PLACEHOLDER -->')
+[void]$sb.AppendLine('')
 
 # Section 2: Tier 2
 [void]$sb.AppendLine('## 🟡 Tier 2: 开发者与环境大缓存 (需权衡决策)')

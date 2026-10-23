@@ -128,7 +128,7 @@
       "type": "function",
       "function": {
         "name": "clean_selected_residues",
-        "description": "Safely cleans confirmed residue IDs (RES-xxx, DEV-xxx) or reads approved checkboxes from the manifest file. Requires explicit user confirmation. Runs in dry-run mode unless force is true.",
+        "description": "Safely cleans confirmed residue IDs (SYS-xxx, RES-xxx, DEV-xxx, AI-xxx, PKG-xxx, IM-xxx, BRW-xxx) or reads approved checkboxes from the manifest file. Requires explicit user confirmation. Runs in dry-run mode unless force is true.",
         "parameters": {
           "type": "object",
           "properties": {
@@ -181,6 +181,28 @@
               "description": "Threshold in days for identifying inactive historic received documents. Defaults to 90.",
               "default": 90
             },
+            "output_manifest": {
+              "type": "string",
+              "description": "Path to update cleanup_manifest.md directly.",
+              "default": ".save-my-disk/cleanup_manifest.md"
+            },
+            "json": {
+              "type": "boolean",
+              "description": "Return structured JSON list.",
+              "default": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "scan_browser_system_caches",
+        "description": "Scans for safe-to-clean browser caches (Chrome, Edge, Brave Code Cache & GPUCache, Firefox cache2), GPU/DirectX shader caches (D3DSCache, NVIDIA DXCache/GLCache), and crash dumps. Strictly shields login credentials and history.",
+        "parameters": {
+          "type": "object",
+          "properties": {
             "output_manifest": {
               "type": "string",
               "description": "Path to update cleanup_manifest.md directly.",

@@ -1,10 +1,11 @@
 {
   "name": "save-my-disk",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "description": "Universal AI Agent toolset for intelligent, non-invasive Windows disk audit, developer environment optimization, and safe cleanup.",
   "scripts": {
     "audit_drives": "powershell -ExecutionPolicy Bypass -File ./scripts/audit_drives.ps1 -Json",
     "scan_app_residues": "powershell -ExecutionPolicy Bypass -File ./scripts/scan_app_residues.ps1 -Json",
+    "scan_browser_system_caches": "powershell -ExecutionPolicy Bypass -File ./scripts/scan_browser_system_caches.ps1 -Json",
     "scan_package_caches": "powershell -ExecutionPolicy Bypass -File ./scripts/scan_package_caches.ps1 -Json",
     "scan_ai_models": "powershell -ExecutionPolicy Bypass -File ./scripts/scan_ai_models.ps1 -Json",
     "scan_im_office_residues": "powershell -ExecutionPolicy Bypass -File ./scripts/scan_im_office_residues.ps1 -Json",

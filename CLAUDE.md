@@ -1,4 +1,4 @@
-# CLAUDE.md - Save My Disk (save-my-disk) Guidelines 🚀 (v0.5.1)
+# CLAUDE.md - Save My Disk (save-my-disk) Guidelines 🚀 (v0.5.2)
 
 This file configures Claude Code when working in this project or utilizing this skill.
 
@@ -10,7 +10,7 @@ This file configures Claude Code when working in this project or utilizing this 
   2. Provide the clickable local file link to `[.save-my-disk/cleanup_manifest.md](file:///path/to/.save-my-disk/cleanup_manifest.md)`.
   3. Inform the user of both confirmation methods: chat reply (e.g. "清理 SYS-001 和 IM-001") or marking `[x]` in the manifest file.
 - **Require User Consent**: Always require explicit confirmation before executing `clean_selected_residues.ps1` or `clean_windows_update.ps1`.
-- **Absolute Chat Database Immunity**: Never list or delete any `*.db`, `*.kvdb`, `Msg`, or `db_storage` chat history database.
+- **Absolute Chat Database & Browser Credential Immunity**: Never list or delete any `*.db`, `*.kvdb`, `Msg`, or `db_storage` chat history database, nor any browser credentials/profiles (`Login Data`, `Cookies`, `History`, `Bookmarks`, `places.sqlite`, `key4.db`).
 - **Reference Safety Matrix**: Consult `references/safety_matrix.md` when recommending actions for unknown paths.
 - **Service Verification**: Check that `wuauserv` service is `Running` after update cache purges.
 
@@ -18,6 +18,7 @@ This file configures Claude Code when working in this project or utilizing this 
 - **Audit Storage (Read-Only)**: `powershell -ExecutionPolicy Bypass -File ./scripts/audit_drives.ps1`
 - **Audit Storage (JSON)**: `powershell -ExecutionPolicy Bypass -File ./scripts/audit_drives.ps1 -Json`
 - **Scan 4-Tier Residues**: `powershell -ExecutionPolicy Bypass -File ./scripts/scan_app_residues.ps1 -OutputManifest ./.save-my-disk/cleanup_manifest.md -Json`
+- **Scan Browser & System Caches**: `powershell -ExecutionPolicy Bypass -File ./scripts/scan_browser_system_caches.ps1 -OutputManifest ./.save-my-disk/cleanup_manifest.md -Json`
 - **Scan Package Caches**: `powershell -ExecutionPolicy Bypass -File ./scripts/scan_package_caches.ps1 -OutputManifest ./.save-my-disk/cleanup_manifest.md -Json`
 - **Scan AI Models**: `powershell -ExecutionPolicy Bypass -File ./scripts/scan_ai_models.ps1 -OutputManifest ./.save-my-disk/cleanup_manifest.md -Json`
 - **Scan IM & Office Caches**: `powershell -ExecutionPolicy Bypass -File ./scripts/scan_im_office_residues.ps1 -OutputManifest ./.save-my-disk/cleanup_manifest.md -Json`
