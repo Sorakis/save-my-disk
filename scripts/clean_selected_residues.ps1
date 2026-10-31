@@ -32,6 +32,14 @@ param(
 
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 
+# Normalize comma-separated arguments when passed from external CLI
+if ($TargetIds) {
+    $TargetIds = @($TargetIds | ForEach-Object { $_ -split ',' } | ForEach-Object { $_.Trim() } | Where-Object { $_ })
+}
+if ($TargetPaths) {
+    $TargetPaths = @($TargetPaths | ForEach-Object { $_ -split ',' } | ForEach-Object { $_.Trim() } | Where-Object { $_ })
+}
+
 $defaultManifest = if ($MockRoot) {
     Join-Path $MockRoot ".save-my-disk\cleanup_manifest.md"
 } else {
@@ -63,6 +71,25 @@ if ($FromManifest -and (Test-Path -LiteralPath $ManifestPath)) {
         Write-Host "Detected $($targetsToDelete.Count) checked item(s) from manifest: $(($targetsToDelete | ForEach-Object { $_.ID }) -join ', ')" -ForegroundColor Cyan
     } else {
         Write-Warning "No checked items (- [x] **[SYS/RES/DEV/AI/PKG-xxx]) found in manifest file: $ManifestPath"
+    }
+}
+
+# 1.5. Fast-resolve manually specified TargetIds from existing manifest if available
+if ($TargetIds -and $targetsToDelete.Count -eq 0 -and (Test-Path -LiteralPath $ManifestPath)) {
+    $manifestContent = Get-Content -LiteralPath $ManifestPath -Raw -Encoding UTF8
+    $pattern = '-\s*(?:\[[ xX]\]\s*)?(?:[🟢🟡🟠🔴]\s*)?(?:~~)?\*\*\[((?:SYS|RES|DEV|AI|PKG|IM|BRW)-\d+)\]\s*(.+?)\*\*.*?\r?\n\s*\*\s*路径[：:]\s*`([^`]+)`'
+    $itemMatches = [regex]::Matches($manifestContent, $pattern, [System.Text.RegularExpressions.RegexOptions]::Singleline)
+
+    foreach ($m in $itemMatches) {
+        $mid = $m.Groups[1].Value
+        if ($TargetIds -contains $mid) {
+            $targetsToDelete += [PSCustomObject]@{
+                ID = $mid
+                Name = $m.Groups[2].Value.Trim()
+                Path = $m.Groups[3].Value.Trim()
+                RiskLevel = "FromManifestIds"
+            }
+        }
     }
 }
 
@@ -323,9 +350,9 @@ foreach ($t in $targetsToDelete) {
             }
             $freedBytes += $sz
             $deletedCount += $oldFiles.Count
-        } elseif ($t.ID -like "BRW-*" -or $t.Category -like "*Browser*" -or $t.Category -like "*Shader*" -or $t.Category -like "*Crash*" -or $p -like "*Code Cache*" -or $p -like "*GPUCache*" -or $p -like "*DXCache*" -or $p -like "*D3DSCache*" -or $p -like "*CrashDumps*" -or $p -like "*cache2*" -or $p -like "*DawnCache*" -or $p -like "*startupCache*") {
-            # Browser caches, GPU shader caches, and crash dumps: purge container contents with graceful lock skipping
-            Write-Host "Purging browser / shader cache files in $p (preserving container)..." -ForegroundColor Cyan
+        } elseif ($t.ID -like "BRW-*" -or $t.ID -in @("SYS-001","SYS-002") -or $t.Category -like "*Browser*" -or $t.Category -like "*Shader*" -or $t.Category -like "*Crash*" -or $t.Category -like "*Temp*" -or $p -like "*Code Cache*" -or $p -like "*GPUCache*" -or $p -like "*DXCache*" -or $p -like "*D3DSCache*" -or $p -like "*CrashDumps*" -or $p -like "*cache2*" -or $p -like "*DawnCache*" -or $p -like "*startupCache*" -or (($p -replace '\\+$','') -like "*\AppData\Local\Temp") -or (($p -replace '\\+$','') -like "*\Windows\SoftwareDistribution\Download")) {
+            # Browser caches, GPU shader caches, Windows update downloads, and Temp: purge container contents with graceful lock skipping
+            Write-Host "Purging cache / temporary files in $p (preserving container)..." -ForegroundColor Cyan
             $items = Get-ChildItem -LiteralPath $p -Recurse -File -Force -ErrorAction SilentlyContinue
             $sz = ($items | Measure-Object -Property Length -Sum).Sum
             if ($null -eq $sz) { $sz = 0 }
